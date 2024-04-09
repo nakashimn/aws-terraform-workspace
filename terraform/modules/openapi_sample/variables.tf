@@ -1,0 +1,2 @@
+variable "resources" {}
+variable "config" {}

@@ -1,0 +1,14 @@
+services:
+  terraform_workspace:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    container_name: terraform_workspace
+    hostname: terraform_workspace
+    shm_size: '1gb'
+    volumes:
+      - ./:/workspace:cached
+      - $HOME/.aws/:/root/.aws/:cached
+    environment:
+      TZ: Asia/Tokyo
+    tty: true
