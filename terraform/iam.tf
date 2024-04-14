@@ -1,5 +1,92 @@
-resource "aws_iam_policy" "ecs_service_role_policy" {
-  name = "CustomECSServiceRolePolicy"
+################################################################################
+# Role
+################################################################################
+resource "aws_iam_role" "ecs_task_execution" {
+  name = "ECSTaskExecutionRole"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+  managed_policy_arns = [
+    "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
+    "arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess"
+  ]
+}
+
+resource "aws_iam_role" "ecs_task" {
+  name = "ECSTaskRole"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+  managed_policy_arns = [
+    aws_iam_policy.ecs_service_role.arn
+  ]
+}
+
+resource "aws_iam_role" "eventbridge_scheduler" {
+  name = "EventbridgeSchedulerRole"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "events.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+  managed_policy_arns = [
+    aws_iam_policy.eventbridge_scheduler_role.arn
+  ]
+}
+
+resource "aws_iam_role" "codebuild" {
+  name               = "CodeBuildRole"
+  assume_role_policy = jsonencode(
+    {
+      "Version"= "2012-10-17",
+      "Statement"= [
+        {
+          "Effect"= "Allow",
+          "Principal"= {
+            "Service"= "codebuild.amazonaws.com"
+          },
+          "Action"= "sts:AssumeRole"
+        }
+      ]
+    }
+  )
+}
+
+resource "aws_iam_role_policy_attachment" "codebuild_policy_attachment" {
+  role       = aws_iam_role.codebuild.name
+  policy_arn = aws_iam_policy.codebuild_role.arn
+}
+
+################################################################################
+# Policy
+################################################################################
+resource "aws_iam_policy" "ecs_service_role" {
+  name = "ECSServiceRolePolicy"
 
   policy = jsonencode(
     {
@@ -208,7 +295,8 @@ resource "aws_iam_policy" "ecs_service_role_policy" {
   )
 }
 
-resource "aws_iam_policy" "eventbridge_scheduler_role_policy" {
+resource "aws_iam_policy" "eventbridge_scheduler_role" {
+  name = "EventbridgeSchedulerRole"
   policy = jsonencode(
     {
       "Version" = "2012-10-17",
@@ -222,6 +310,31 @@ resource "aws_iam_policy" "eventbridge_scheduler_role_policy" {
           Effect   = "Allow"
           Action   = "ecs:RunTask"
           Resource = "*"
+        }
+      ]
+    }
+  )
+}
+
+resource "aws_iam_policy" "codebuild_role" {
+  name = "CodebuildRole"
+  policy = jsonencode(
+    {
+      "Version"= "2012-10-17",
+      "Statement"= [
+        {
+          "Effect"= "Allow",
+          "Action"= [
+              "logs:*"
+          ],
+          "Resource": "*"
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+              "ecr:*"
+          ],
+          "Resource": "*"
         }
       ]
     }

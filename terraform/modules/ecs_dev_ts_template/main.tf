@@ -1,13 +1,16 @@
+################################################################################
+# Params
+################################################################################
 locals {
-  name    = "ecs_dev_ts_template"
+  name    = "ecs-dev-ts-template"
   version = "0.0.1"
 }
 
 ################################################################################
 # Repository
 ################################################################################
-resource "aws_ecr_repository" "ecs_dev_ts_template" {
-  name                 = local.name
+resource "aws_ecr_repository" "main" {
+  name                 = "ecs_dev_ts_template"
   image_tag_mutability = "MUTABLE"
   image_scanning_configuration {
     scan_on_push = true
@@ -17,7 +20,7 @@ resource "aws_ecr_repository" "ecs_dev_ts_template" {
 ################################################################################
 # Logger
 ################################################################################
-resource "aws_cloudwatch_log_group" "ecs_dev_ts_template" {
+resource "aws_cloudwatch_log_group" "main" {
   name              = local.name
   retention_in_days = 30
 }
@@ -25,21 +28,27 @@ resource "aws_cloudwatch_log_group" "ecs_dev_ts_template" {
 ################################################################################
 # Scheduler
 ################################################################################
-resource "aws_cloudwatch_event_rule" "ecs_dev_ts_template" {
+resource "aws_cloudwatch_event_rule" "main" {
   name                = local.name
   schedule_expression = "cron(0 15 * * ? *)" # UTC
 }
 
-resource "aws_cloudwatch_event_target" "ecs_dev_ts_template" {
-  rule     = aws_cloudwatch_event_rule.ecs_dev_ts_template.name
-  arn      = aws_ecs_cluster.ecs_dev_ts_template.arn
-  role_arn = var.resources.eventbridge_scheduler_role_arn
+resource "aws_cloudwatch_event_target" "main" {
+  depends_on = [
+    aws_cloudwatch_event_rule.main,
+    aws_ecs_cluster.main,
+    aws_ecs_task_definition.main
+  ]
+
+  rule     = aws_cloudwatch_event_rule.main.name
+  arn      = aws_ecs_cluster.main.arn
+  role_arn = var.eventbridge_scheduler_role.arn
   ecs_target {
-    task_definition_arn = aws_ecs_task_definition.ecs_dev_ts_template.arn
+    task_definition_arn = aws_ecs_task_definition.main.arn
     network_configuration {
       assign_public_ip = false
-      subnets          = var.config.subnet_ids
-      security_groups  = var.config.security_group_ids
+      subnets          = var.subnet_ids
+      security_groups  = var.security_group_ids
     }
   }
 }
@@ -47,23 +56,28 @@ resource "aws_cloudwatch_event_target" "ecs_dev_ts_template" {
 ################################################################################
 # Task
 ################################################################################
-resource "aws_ecs_cluster" "ecs_dev_ts_template" {
+resource "aws_ecs_cluster" "main" {
   name = local.name
 }
 
-resource "aws_ecs_task_definition" "ecs_dev_ts_template" {
+resource "aws_ecs_task_definition" "main" {
+  depends_on = [
+    aws_ecr_repository.main,
+    aws_cloudwatch_log_group.main
+  ]
+
   family                   = local.name
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = 512
   memory                   = 1024
-  execution_role_arn       = var.resources.ecs_task_execution_role_arn
-  task_role_arn            = var.resources.ecs_task_role_arn
+  execution_role_arn       = var.ecs_task_execution_role.arn
+  task_role_arn            = var.ecs_task_role.arn
   container_definitions = jsonencode(
     [
       {
         name      = local.name
-        image     = "${aws_ecr_repository.ecs_dev_ts_template.repository_url}:${local.version}"
+        image     = "${aws_ecr_repository.main.repository_url}:${local.version}"
         cpu       = 512
         memory    = 1024
         essential = true
@@ -73,9 +87,9 @@ resource "aws_ecs_task_definition" "ecs_dev_ts_template" {
         logConfiguration = {
           logDriver = "awslogs",
           options = {
-            awslogs-region        = var.config.region
+            awslogs-region        = var.region
             awslogs-stream-prefix = local.name
-            awslogs-group         = aws_cloudwatch_log_group.ecs_dev_ts_template.name
+            awslogs-group         = aws_cloudwatch_log_group.main.name
           }
         }
       }
