@@ -340,3 +340,23 @@ resource "aws_iam_policy" "codebuild_role" {
     }
   )
 }
+
+data "aws_iam_policy_document" "rest_api" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    actions   = ["execute-api:Invoke"]
+    resources = [aws_api_gateway_rest_api.main.execution_arn]
+
+    condition {
+      test     = "IpAddress"
+      variable = "aws:SourceIp"
+      values   = ["0.0.0.0/0"]
+    }
+  }
+}

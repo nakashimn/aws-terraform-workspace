@@ -4,7 +4,7 @@
 locals {
   name            = "openapi-sample"
   repository_name = "openapi_sample"
-  version         = "0.0.2"
+  version         = "develop"
 }
 
 ################################################################################
@@ -38,11 +38,9 @@ resource "aws_ecs_cluster" "main" {
 ################################################################################
 resource "aws_lb" "main" {
   name               = "alb-openapi-sample"
-  load_balancer_type = "application"
-  internal           = false
-  idle_timeout       = 60
+  load_balancer_type = "network"
+  internal           = true
   subnets            = var.subnet_ids
-  security_groups    = var.security_group_ids
 }
 
 resource "aws_lb_target_group" "main" {
@@ -50,12 +48,10 @@ resource "aws_lb_target_group" "main" {
   target_type = "ip"
   vpc_id      = var.vpc_id
   port        = var.port
-  protocol    = "HTTP"
+  protocol    = "TCP"
   health_check {
-    path                = var.health_check_path
     port                = "traffic-port"
-    protocol            = "HTTP"
-    timeout             = 30
+    protocol            = "TCP"
     interval            = 60
     healthy_threshold   = 2
     unhealthy_threshold = 2
@@ -67,9 +63,10 @@ resource "aws_lb_listener" "main" {
     aws_lb.main,
     aws_lb_target_group.main
   ]
+
   load_balancer_arn = aws_lb.main.arn
   port              = var.port
-  protocol          = "HTTP"
+  protocol          = "TCP"
 
   default_action {
     type             = "forward"
@@ -204,10 +201,15 @@ resource "aws_codebuild_webhook" "main" {
   depends_on = [aws_codebuild_project.main]
 
   project_name = aws_codebuild_project.main.name
+  build_type = "BUILD"
   filter_group {
     filter {
       type    = "EVENT"
       pattern = "PUSH"
+    }
+    filter {
+      type    = "HEAD_REF"
+      pattern = "develop"
     }
   }
 }

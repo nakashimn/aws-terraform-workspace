@@ -44,6 +44,6 @@ module "openapi_sample" {
   ecs_task_role           = aws_iam_role.ecs_task
   region                  = var.region
   security_group_ids      = [aws_security_group.main.id]
-  subnet_ids              = aws_subnet.public.*.id
+  subnet_ids              = aws_subnet.private.*.id
   vpc_id                  = aws_vpc.main.id
 }

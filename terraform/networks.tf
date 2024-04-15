@@ -27,8 +27,8 @@ resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 }
 
-# RoutingTable定義
-resource "aws_route_table" "main" {
+# PublicRoutingTable定義
+resource "aws_route_table" "public" {
   depends_on = [aws_vpc.main]
 
   vpc_id = aws_vpc.main.id
@@ -36,15 +36,19 @@ resource "aws_route_table" "main" {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.main.id
   }
+
+  tags = {
+    Name = "route-table-public"
+  }
 }
 
-# RoutingTableとPublicSubnetの紐づけ
+# PublicRoutingTableとPublicSubnetの紐づけ
 resource "aws_route_table_association" "public" {
-  depends_on = [aws_route_table.main]
+  depends_on = [aws_route_table.public]
 
   count          = length(local.availability_zones)
   subnet_id      = aws_subnet.public[count.index].id
-  route_table_id = aws_route_table.main.id
+  route_table_id = aws_route_table.public.id
 }
 
 ################################################################################
@@ -72,8 +76,7 @@ resource "aws_subnet" "public" {
 resource "aws_subnet" "private" {
   depends_on = [aws_vpc.main]
 
-  # count = length(local.availability_zones)
-  count  = 0 # =disabled(リソースを生成しない)
+  count = length(local.availability_zones) # AvailabilityZoneの数だけ生成
   vpc_id = aws_vpc.main.id
   cidr_block = cidrsubnet(
     aws_vpc.main.cidr_block,
@@ -83,7 +86,7 @@ resource "aws_subnet" "private" {
   availability_zone       = local.availability_zones[count.index].name
   map_public_ip_on_launch = false
   tags = {
-    Name = "nakashimn-terraform-pribate-${local.availability_zones[count.index].zone_id}"
+    Name = "nakashimn-terraform-private-${local.availability_zones[count.index].zone_id}"
   }
 }
 
@@ -136,6 +139,71 @@ resource "aws_security_group_rule" "egress" {
 }
 
 ################################################################################
+# NATGateway
+################################################################################
+#NATGateway定義
+resource "aws_nat_gateway" "main" {
+  depends_on = [aws_subnet.public]
+
+  count = length(aws_subnet.public)
+  allocation_id = aws_eip.nat_gateway[count.index].id
+  subnet_id     = aws_subnet.public[count.index].id
+
+  tags = {
+    Name = "nat-gateway-terraform-${count.index}"
+  }
+}
+
+# NATGateway用ElasticIP定義
+resource "aws_eip" "nat_gateway" {
+  depends_on = [aws_subnet.public]
+
+  count = length(aws_subnet.public)
+
+  tags = {
+    Name = "elastic-ip-${count.index}"
+  }
+}
+
+
+# PrivateRoutingTable定義
+resource "aws_route_table" "private" {
+  depends_on = [aws_vpc.main]
+
+  count = length(aws_subnet.private)
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "route-table-private-${count.index}"
+  }
+}
+
+# PrivateRoutingTableとPrivateSubnetの紐づけ
+resource "aws_route" "private" {
+  depends_on = [
+    aws_route_table.private,
+    aws_nat_gateway.main
+  ]
+
+  count                  = length(aws_route_table.private)
+  route_table_id         = aws_route_table.private[count.index].id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.main[count.index].id
+}
+
+# PrivateRoutingTableとPrivateSubnetの紐づけ
+resource "aws_route_table_association" "private" {
+  depends_on = [
+    aws_subnet.private,
+    aws_route_table.private
+  ]
+
+  count          = length(aws_subnet.private)
+  subnet_id      = aws_subnet.private[count.index].id
+  route_table_id = aws_route_table.private[count.index].id
+}
+
+################################################################################
 # APIGateway
 ################################################################################
 # APIGateway定義
@@ -177,8 +245,8 @@ resource "aws_api_gateway_integration" "openapi_sample_get" {
   type                    = "HTTP_PROXY"
   uri                     = "http://${module.openapi_sample.aws_lb.dns_name}"
 
-  # connection_type = "VPC_LINK"
-  # connection_id   = "${aws_api_gateway_vpc_link.openapi_sample.id}"
+  connection_type = "VPC_LINK"
+  connection_id   = aws_api_gateway_vpc_link.openapi_sample.id
 }
 
 # APIGatewayとALBのDNSの紐づけ(postメソッド)
@@ -192,8 +260,24 @@ resource "aws_api_gateway_integration" "openapi_sample_post" {
   type                    = "HTTP_PROXY"
   uri                     = "http://${module.openapi_sample.aws_lb.dns_name}"
 
-  # connection_type = "VPC_LINK"
-  # connection_id   = "${aws_api_gateway_vpc_link.openapi_sample.id}"
+  connection_type = "VPC_LINK"
+  connection_id   = aws_api_gateway_vpc_link.openapi_sample.id
+}
+
+# APIGatewayとアクセス制御用Policyの紐づけ
+resource "aws_api_gateway_rest_api_policy" "internal" {
+  depends_on = [data.aws_iam_policy_document.rest_api]
+
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  policy      = data.aws_iam_policy_document.rest_api.json
+}
+
+# APIGatewayとVPCLinkの紐づけ
+resource "aws_api_gateway_vpc_link" "openapi_sample" {
+  depends_on = [module.openapi_sample.aws_lb]
+
+  name        = "api-gateway-vpc-link-openapi-sample"
+  target_arns = [module.openapi_sample.aws_lb.arn]
 }
 
 ### ToBeDeveloped...
@@ -202,11 +286,4 @@ resource "aws_api_gateway_integration" "openapi_sample_post" {
 
 #   rest_api_id   = aws_api_gateway_rest_api.main.id
 #   stage_name    = "prod"
-# }
-
-# resource "aws_api_gateway_vpc_link" "openapi_sample" {
-#   depends_on = [module.openapi_sample.aws_lb]
-
-#   name        = "api-gateway-vpc-link-openapi-sample"
-#   target_arns = [module.openapi_sample.aws_lb.arn]
 # }
