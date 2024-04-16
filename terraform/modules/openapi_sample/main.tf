@@ -47,7 +47,7 @@ resource "aws_lb_target_group" "main" {
   name        = "openapi-sample"
   target_type = "ip"
   vpc_id      = var.vpc_id
-  port        = var.port
+  port        = var.container_port
   protocol    = "TCP"
   health_check {
     port                = "traffic-port"
@@ -65,7 +65,7 @@ resource "aws_lb_listener" "main" {
   ]
 
   load_balancer_arn = aws_lb.main.arn
-  port              = var.port
+  port              = var.open_port
   protocol          = "TCP"
 
   default_action {
@@ -91,13 +91,13 @@ resource "aws_ecs_service" "main" {
   launch_type     = "FARGATE"
   network_configuration {
     subnets          = var.subnet_ids
-    security_groups  = var.security_group_ids
+    security_groups  = [aws_security_group.main.id]
     assign_public_ip = true
   }
   load_balancer {
     target_group_arn = aws_lb_target_group.main.arn
     container_name   = local.name
-    container_port   = var.port
+    container_port   = var.container_port
   }
 }
 
@@ -123,12 +123,12 @@ resource "aws_ecs_task_definition" "main" {
         memory    = 1024
         essential = true
         environment = [
-          { name = "PORT", value = tostring(var.port) }
+          { name = "PORT", value = tostring(var.container_port) }
         ]
         portMappings = [
           {
-            containerPort = var.port
-            hostPort      = var.port
+            containerPort = var.container_port
+            hostPort      = var.container_port
           }
         ]
         logConfiguration = {
@@ -142,6 +142,35 @@ resource "aws_ecs_task_definition" "main" {
       }
     ]
   )
+}
+
+################################################################################
+# SecurityGroup
+################################################################################
+# SecurityGroup定義
+resource "aws_security_group" "main" {
+  name   = local.name
+  vpc_id = var.vpc_id
+}
+
+# SecurityGroupRule(外部向けインバウンドルール)定義
+resource "aws_security_group_rule" "ingress" {
+  security_group_id = aws_security_group.main.id
+  type              = "ingress"
+  from_port         = var.container_port
+  to_port           = var.container_port
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+# SecurityGroupRule(アウトバウンドルール)定義
+resource "aws_security_group_rule" "egress" {
+  security_group_id = aws_security_group.main.id
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  cidr_blocks       = ["0.0.0.0/0"]
 }
 
 
@@ -209,7 +238,7 @@ resource "aws_codebuild_webhook" "main" {
     }
     filter {
       type    = "HEAD_REF"
-      pattern = "develop"
+      pattern = "^refs/heads/develop"
     }
   }
 }

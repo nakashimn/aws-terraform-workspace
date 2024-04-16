@@ -31,6 +31,7 @@ resource "aws_internet_gateway" "main" {
 resource "aws_route_table" "public" {
   depends_on = [aws_vpc.main]
 
+  count = length(aws_subnet.public)
   vpc_id = aws_vpc.main.id
   route {
     cidr_block = "0.0.0.0/0"
@@ -38,7 +39,7 @@ resource "aws_route_table" "public" {
   }
 
   tags = {
-    Name = "route-table-public"
+    Name = "route-table-public-${count.index}"
   }
 }
 
@@ -48,7 +49,7 @@ resource "aws_route_table_association" "public" {
 
   count          = length(local.availability_zones)
   subnet_id      = aws_subnet.public[count.index].id
-  route_table_id = aws_route_table.public.id
+  route_table_id = aws_route_table.public[count.index].id
 }
 
 ################################################################################
@@ -165,7 +166,6 @@ resource "aws_eip" "nat_gateway" {
   }
 }
 
-
 # PrivateRoutingTable定義
 resource "aws_route_table" "private" {
   depends_on = [aws_vpc.main]
@@ -211,54 +211,38 @@ resource "aws_api_gateway_rest_api" "main" {
   name = "aws-api-gateway-terraform"
 }
 
-# APIGatewayのパス確保
+# APIGatewayのリソース定義
 resource "aws_api_gateway_resource" "main" {
   rest_api_id = aws_api_gateway_rest_api.main.id
   parent_id   = aws_api_gateway_rest_api.main.root_resource_id
-  path_part   = module.openapi_sample.name
+  path_part   = "{proxy+}"
 }
 
-# getメソッド定義
-resource "aws_api_gateway_method" "get" {
+# HTTPリクエストメソッド定義
+resource "aws_api_gateway_method" "openapi_sample" {
+  count         = length(var.acceptable_method)
   rest_api_id   = aws_api_gateway_rest_api.main.id
   resource_id   = aws_api_gateway_resource.main.id
-  http_method   = "GET"
+  http_method   = var.acceptable_method[count.index]
   authorization = "NONE"
+   request_parameters = {
+    "method.request.path.proxy" = true
+  }
 }
 
-# postメソッド定義
-resource "aws_api_gateway_method" "post" {
-  rest_api_id   = aws_api_gateway_rest_api.main.id
-  resource_id   = aws_api_gateway_resource.main.id
-  http_method   = "POST"
-  authorization = "NONE"
-}
-
-# APIGatewayとALBのDNSの紐づけ(getメソッド)
-resource "aws_api_gateway_integration" "openapi_sample_get" {
-  depends_on = [module.openapi_sample.aws_lb]
-
+# APIGatewayとALBのDNSの紐づけ
+resource "aws_api_gateway_integration" "openapi_sample" {
+  count                   = length(aws_api_gateway_method.openapi_sample)
   rest_api_id             = aws_api_gateway_rest_api.main.id
   resource_id             = aws_api_gateway_resource.main.id
-  http_method             = aws_api_gateway_method.get.http_method
-  integration_http_method = "GET"
+  http_method             = aws_api_gateway_method.openapi_sample[count.index].http_method
+  integration_http_method = aws_api_gateway_method.openapi_sample[count.index].http_method
   type                    = "HTTP_PROXY"
-  uri                     = "http://${module.openapi_sample.aws_lb.dns_name}"
-
-  connection_type = "VPC_LINK"
-  connection_id   = aws_api_gateway_vpc_link.openapi_sample.id
-}
-
-# APIGatewayとALBのDNSの紐づけ(postメソッド)
-resource "aws_api_gateway_integration" "openapi_sample_post" {
-  depends_on = [module.openapi_sample.aws_lb]
-
-  rest_api_id             = aws_api_gateway_rest_api.main.id
-  resource_id             = aws_api_gateway_resource.main.id
-  http_method             = aws_api_gateway_method.post.http_method
-  integration_http_method = "POST"
-  type                    = "HTTP_PROXY"
-  uri                     = "http://${module.openapi_sample.aws_lb.dns_name}"
+  uri                     = "http://${module.openapi_sample.aws_lb.dns_name}/{proxy}"
+  cache_key_parameters = ["method.request.path.proxy"]
+  request_parameters = {
+    "integration.request.path.proxy" = "method.request.path.proxy"
+  }
 
   connection_type = "VPC_LINK"
   connection_id   = aws_api_gateway_vpc_link.openapi_sample.id
@@ -266,24 +250,52 @@ resource "aws_api_gateway_integration" "openapi_sample_post" {
 
 # APIGatewayとアクセス制御用Policyの紐づけ
 resource "aws_api_gateway_rest_api_policy" "internal" {
-  depends_on = [data.aws_iam_policy_document.rest_api]
-
   rest_api_id = aws_api_gateway_rest_api.main.id
-  policy      = data.aws_iam_policy_document.rest_api.json
+  policy      = data.aws_iam_policy_document.api_gateway.json
 }
 
 # APIGatewayとVPCLinkの紐づけ
 resource "aws_api_gateway_vpc_link" "openapi_sample" {
-  depends_on = [module.openapi_sample.aws_lb]
-
   name        = "api-gateway-vpc-link-openapi-sample"
   target_arns = [module.openapi_sample.aws_lb.arn]
 }
 
-### ToBeDeveloped...
-# resource "aws_api_gateway_deployment" "main" {
-#   depends_on    = [aws_api_gateway_integration.openapi_sample_get]
+# APIGatewayデプロイ定義
+resource "aws_api_gateway_deployment" "openapi_sample" {
+  depends_on    = [aws_api_gateway_integration.openapi_sample]
 
-#   rest_api_id   = aws_api_gateway_rest_api.main.id
-#   stage_name    = "prod"
-# }
+  rest_api_id   = aws_api_gateway_rest_api.main.id
+  triggers      = {
+    redeployment = sha1(
+      jsonencode(
+        [
+          aws_api_gateway_resource.main.id,
+          aws_api_gateway_method.openapi_sample.*.id,
+          aws_api_gateway_integration.openapi_sample.*.id,
+        ]
+      )
+    )
+  }
+}
+
+# APIデプロイ先Stage定義
+resource "aws_api_gateway_stage" "openapi_sample" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  deployment_id = aws_api_gateway_deployment.openapi_sample.id
+  stage_name = "develop"
+
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.api_gateway.arn
+    format          = replace(file("${path.module}/assets/logformat/api_gateway.json"), "\n", "")
+  }
+}
+
+# Logging用Role紐づけ
+resource "aws_api_gateway_account" "api_gateway_account" {
+  cloudwatch_role_arn = aws_iam_role.api_gateway.arn
+}
+
+# APIGateway用Logger定義
+resource "aws_cloudwatch_log_group" "api_gateway" {
+  name = "/api-gateway/"
+}

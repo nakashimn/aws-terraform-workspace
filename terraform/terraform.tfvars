@@ -1,3 +1,8 @@
+acceptable_method = [
+  "GET",
+  "POST"
+]
+
 allowed_ip_addresses = [
   "106.155.48.108/32"
 ]

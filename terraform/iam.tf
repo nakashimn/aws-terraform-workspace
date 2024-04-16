@@ -82,6 +82,30 @@ resource "aws_iam_role_policy_attachment" "codebuild_policy_attachment" {
   policy_arn = aws_iam_policy.codebuild_role.arn
 }
 
+resource "aws_iam_role" "api_gateway" {
+  name = "RestAPIGateway"
+
+  assume_role_policy = jsonencode(
+    {
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Action = "sts:AssumeRole"
+          Principal = {
+            Service = "apigateway.amazonaws.com"
+          }
+          Effect = "Allow"
+        }
+      ]
+    }
+  )
+}
+
+resource "aws_iam_role_policy_attachment" "apigateway" {
+  role       = aws_iam_role.api_gateway.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+}
+
 ################################################################################
 # Policy
 ################################################################################
@@ -341,17 +365,17 @@ resource "aws_iam_policy" "codebuild_role" {
   )
 }
 
-data "aws_iam_policy_document" "rest_api" {
+data "aws_iam_policy_document" "api_gateway" {
   statement {
     effect = "Allow"
 
     principals {
-      type        = "AWS"
+      type        = "*"
       identifiers = ["*"]
     }
 
     actions   = ["execute-api:Invoke"]
-    resources = [aws_api_gateway_rest_api.main.execution_arn]
+    resources = ["arn:aws:execute-api:${var.region}:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.main.id}/*"]
 
     condition {
       test     = "IpAddress"
@@ -359,4 +383,26 @@ data "aws_iam_policy_document" "rest_api" {
       values   = ["0.0.0.0/0"]
     }
   }
+}
+
+resource "aws_iam_role_policy" "api_gateway_log_policy" {
+  name   = "APIGatewayLogPolicy"
+  role   = aws_iam_role.api_gateway.id
+
+  policy = jsonencode(
+    {
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Effect = "Allow"
+          Action = [
+            "logs:CreateLogGroup",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents"
+          ]
+          Resource = aws_cloudwatch_log_group.api_gateway.arn
+        }
+      ]
+    }
+  )
 }

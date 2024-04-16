@@ -6,11 +6,11 @@ variable "health_check_path" {
   default     = "/api/v1/hello"
   description = "healthcheck用のpath ステータスコード:200のレスポンスを期待する"
 }
-variable "port" {
-  default     = 3000
-  description = "HTTPリクエストを受け付けるポート"
+variable "container_port" {description = "コンテナの開放ポート" }
+variable "open_port" {
+  default = 80
+  description = "NLBが受け付けるポート"
 }
 variable "region" { description = "利用するリージョン" }
 variable "subnet_ids" { description = "利用するSubnetのIDのリスト" }
-variable "security_group_ids" { description = "利用するSecurityGroupのIDのリスト" }
 variable "vpc_id" { description = "利用するVPCのID" }

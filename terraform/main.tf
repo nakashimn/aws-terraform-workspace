@@ -40,10 +40,11 @@ module "openapi_sample" {
   source                  = "./modules/openapi_sample"
   account_id              = data.aws_caller_identity.current.account_id
   codebuild_role          = aws_iam_role.codebuild
+  container_port          = 3000
   ecs_task_execution_role = aws_iam_role.ecs_task_execution
   ecs_task_role           = aws_iam_role.ecs_task
+  open_port               = 80
   region                  = var.region
-  security_group_ids      = [aws_security_group.main.id]
   subnet_ids              = aws_subnet.private.*.id
   vpc_id                  = aws_vpc.main.id
 }
