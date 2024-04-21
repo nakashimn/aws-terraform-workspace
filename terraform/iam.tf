@@ -3,18 +3,10 @@
 ################################################################################
 resource "aws_iam_role" "ecs_task_execution" {
   name = "ECSTaskExecutionRole"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "ecs-tasks.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
+  assume_role_policy = templatefile(
+    "${path.module}/assets/templates/assume_role_policy.tpl",
+    {principal = "ecs-tasks.amazonaws.com"}
+  )
   managed_policy_arns = [
     "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
     "arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess"
@@ -23,18 +15,10 @@ resource "aws_iam_role" "ecs_task_execution" {
 
 resource "aws_iam_role" "ecs_task" {
   name = "ECSTaskRole"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "ecs-tasks.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
+  assume_role_policy = templatefile(
+    "${path.module}/assets/templates/assume_role_policy.tpl",
+    {principal = "ecs-tasks.amazonaws.com"}
+  )
   managed_policy_arns = [
     aws_iam_policy.ecs_service_role.arn
   ]
@@ -42,18 +26,10 @@ resource "aws_iam_role" "ecs_task" {
 
 resource "aws_iam_role" "eventbridge_scheduler" {
   name = "EventbridgeSchedulerRole"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "events.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
+  assume_role_policy = templatefile(
+    "${path.module}/assets/templates/assume_role_policy.tpl",
+    {principal = "events.amazonaws.com"}
+  )
   managed_policy_arns = [
     aws_iam_policy.eventbridge_scheduler_role.arn
   ]
@@ -61,49 +37,24 @@ resource "aws_iam_role" "eventbridge_scheduler" {
 
 resource "aws_iam_role" "codebuild" {
   name               = "CodeBuildRole"
-  assume_role_policy = jsonencode(
-    {
-      "Version"= "2012-10-17",
-      "Statement"= [
-        {
-          "Effect"= "Allow",
-          "Principal"= {
-            "Service"= "codebuild.amazonaws.com"
-          },
-          "Action"= "sts:AssumeRole"
-        }
-      ]
-    }
+  assume_role_policy = templatefile(
+    "${path.module}/assets/templates/assume_role_policy.tpl",
+    {principal = "codebuild.amazonaws.com"}
   )
-}
-
-resource "aws_iam_role_policy_attachment" "codebuild_policy_attachment" {
-  role       = aws_iam_role.codebuild.name
-  policy_arn = aws_iam_policy.codebuild_role.arn
+  managed_policy_arns = [
+    aws_iam_policy.codebuild_role.arn
+  ]
 }
 
 resource "aws_iam_role" "api_gateway" {
   name = "RestAPIGateway"
-
-  assume_role_policy = jsonencode(
-    {
-      Version = "2012-10-17"
-      Statement = [
-        {
-          Action = "sts:AssumeRole"
-          Principal = {
-            Service = "apigateway.amazonaws.com"
-          }
-          Effect = "Allow"
-        }
-      ]
-    }
+  assume_role_policy = templatefile(
+    "${path.module}/assets/templates/assume_role_policy.tpl",
+    {principal = "apigateway.amazonaws.com"}
   )
-}
-
-resource "aws_iam_role_policy_attachment" "apigateway" {
-  role       = aws_iam_role.api_gateway.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+  managed_policy_arns = [
+    "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+  ]
 }
 
 ################################################################################

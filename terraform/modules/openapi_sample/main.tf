@@ -238,7 +238,7 @@ resource "aws_codebuild_webhook" "main" {
     }
     filter {
       type    = "HEAD_REF"
-      pattern = "^refs/heads/develop"
+      pattern = "develop"
     }
   }
 }
