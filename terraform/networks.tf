@@ -91,46 +91,6 @@ resource "aws_route_table_association" "private" {
 }
 
 ################################################################################
-# SecurityGroup
-################################################################################
-# SecurityGroup定義
-resource "aws_security_group" "main" {
-  name   = "terraform-security-group"
-  vpc_id = aws_vpc.main.id
-}
-
-# SecurityGroupRule(ssh接続用インバウンドルール)定義
-resource "aws_security_group_rule" "ingress_ssh" {
-  security_group_id = aws_security_group.main.id
-  type              = "ingress"
-  from_port         = 22
-  to_port           = 22
-  protocol          = "tcp"
-  cidr_blocks       = var.allowed_ip_addresses
-}
-
-# SecurityGroupRule(外部向けインバウンドルール)定義
-resource "aws_security_group_rule" "ingress" {
-  count             = length(var.open_ports)
-  security_group_id = aws_security_group.main.id
-  type              = "ingress"
-  from_port         = var.open_ports[count.index]
-  to_port           = var.open_ports[count.index]
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-}
-
-# SecurityGroupRule(アウトバウンドルール)定義
-resource "aws_security_group_rule" "egress" {
-  security_group_id = aws_security_group.main.id
-  type              = "egress"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
-}
-
-################################################################################
 # InternetGateway
 ################################################################################
 # InternetGateway定義
