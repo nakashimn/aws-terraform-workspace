@@ -5,7 +5,7 @@ resource "aws_iam_role" "ecs_task_execution" {
   name = "ECSTaskExecutionRole"
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
-    {principal = "ecs-tasks.amazonaws.com"}
+    { principal = "ecs-tasks.amazonaws.com" }
   )
   managed_policy_arns = [
     "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
@@ -17,7 +17,7 @@ resource "aws_iam_role" "ecs_task" {
   name = "ECSTaskRole"
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
-    {principal = "ecs-tasks.amazonaws.com"}
+    { principal = "ecs-tasks.amazonaws.com" }
   )
   managed_policy_arns = [
     aws_iam_policy.ecs_service_role.arn
@@ -28,7 +28,7 @@ resource "aws_iam_role" "eventbridge_scheduler" {
   name = "EventbridgeSchedulerRole"
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
-    {principal = "events.amazonaws.com"}
+    { principal = "events.amazonaws.com" }
   )
   managed_policy_arns = [
     aws_iam_policy.eventbridge_scheduler_role.arn
@@ -36,10 +36,10 @@ resource "aws_iam_role" "eventbridge_scheduler" {
 }
 
 resource "aws_iam_role" "codebuild" {
-  name               = "CodeBuildRole"
+  name = "CodeBuildRole"
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
-    {principal = "codebuild.amazonaws.com"}
+    { principal = "codebuild.amazonaws.com" }
   )
   managed_policy_arns = [
     aws_iam_policy.codebuild_role.arn
@@ -50,7 +50,7 @@ resource "aws_iam_role" "api_gateway" {
   name = "RestAPIGateway"
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
-    {principal = "apigateway.amazonaws.com"}
+    { principal = "apigateway.amazonaws.com" }
   )
   managed_policy_arns = [
     "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
@@ -295,21 +295,21 @@ resource "aws_iam_policy" "codebuild_role" {
   name = "CodebuildRole"
   policy = jsonencode(
     {
-      "Version"= "2012-10-17",
-      "Statement"= [
+      "Version" = "2012-10-17",
+      "Statement" = [
         {
-          "Effect"= "Allow",
-          "Action"= [
-              "logs:*"
+          "Effect" = "Allow",
+          "Action" = [
+            "logs:*"
           ],
-          "Resource": "*"
+          "Resource" : "*"
         },
         {
-          "Effect": "Allow",
-          "Action": [
-              "ecr:*"
+          "Effect" : "Allow",
+          "Action" : [
+            "ecr:*"
           ],
-          "Resource": "*"
+          "Resource" : "*"
         }
       ]
     }
@@ -337,8 +337,8 @@ data "aws_iam_policy_document" "api_gateway" {
 }
 
 resource "aws_iam_role_policy" "api_gateway_log_policy" {
-  name   = "APIGatewayLogPolicy"
-  role   = aws_iam_role.api_gateway.id
+  name = "APIGatewayLogPolicy"
+  role = aws_iam_role.api_gateway.id
 
   policy = jsonencode(
     {

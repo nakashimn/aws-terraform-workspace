@@ -27,7 +27,7 @@ resource "aws_subnet" "public" {
 
 # PublicRoutingTable定義
 resource "aws_route_table" "public" {
-  count = length(aws_subnet.public)
+  count  = length(aws_subnet.public)
   vpc_id = aws_vpc.main.id
 
   # InternetGatewayと紐づけ
@@ -53,7 +53,7 @@ resource "aws_route_table_association" "public" {
 ################################################################################
 # PrivateSubnet定義
 resource "aws_subnet" "private" {
-  count = length(local.availability_zones) # AvailabilityZoneの数だけ生成
+  count  = length(local.availability_zones) # AvailabilityZoneの数だけ生成
   vpc_id = aws_vpc.main.id
   cidr_block = cidrsubnet(
     aws_vpc.main.cidr_block,
@@ -69,13 +69,13 @@ resource "aws_subnet" "private" {
 
 # PrivateRoutingTable定義
 resource "aws_route_table" "private" {
-  count = length(aws_subnet.private)
+  count  = length(aws_subnet.private)
   vpc_id = aws_vpc.main.id
 
   # NATGatewayと紐づけ
   route {
-      cidr_block = "0.0.0.0/0"
-      nat_gateway_id = aws_nat_gateway.main[count.index].id
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.main[count.index].id
   }
 
   tags = {
@@ -143,7 +143,7 @@ resource "aws_internet_gateway" "main" {
 ################################################################################
 #NATGateway定義
 resource "aws_nat_gateway" "main" {
-  count = length(aws_subnet.public)
+  count         = length(aws_subnet.public)
   allocation_id = aws_eip.nat_gateway[count.index].id
   subnet_id     = aws_subnet.public[count.index].id
 

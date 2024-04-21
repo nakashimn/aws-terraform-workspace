@@ -20,7 +20,7 @@ resource "aws_api_gateway_method" "openapi_sample" {
   resource_id   = aws_api_gateway_resource.main.id
   http_method   = var.acceptable_method[count.index]
   authorization = "NONE"
-   request_parameters = {
+  request_parameters = {
     "method.request.path.proxy" = true
   }
 }
@@ -34,7 +34,7 @@ resource "aws_api_gateway_integration" "openapi_sample" {
   integration_http_method = aws_api_gateway_method.openapi_sample[count.index].http_method
   type                    = "HTTP_PROXY"
   uri                     = "http://${module.openapi_sample.aws_lb.dns_name}/{proxy}"
-  cache_key_parameters = ["method.request.path.proxy"]
+  cache_key_parameters    = ["method.request.path.proxy"]
   request_parameters = {
     "integration.request.path.proxy" = "method.request.path.proxy" # Proxy統合有効化
   }
@@ -57,10 +57,10 @@ resource "aws_api_gateway_vpc_link" "openapi_sample" {
 
 # APIGatewayデプロイ定義
 resource "aws_api_gateway_deployment" "openapi_sample" {
-  depends_on    = [aws_api_gateway_integration.openapi_sample]
+  depends_on = [aws_api_gateway_integration.openapi_sample]
 
-  rest_api_id   = aws_api_gateway_rest_api.main.id
-  triggers      = {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  triggers = {
     redeployment = sha1(
       jsonencode(
         [
@@ -75,9 +75,9 @@ resource "aws_api_gateway_deployment" "openapi_sample" {
 
 # APIデプロイ先Stage定義
 resource "aws_api_gateway_stage" "openapi_sample" {
-  rest_api_id = aws_api_gateway_rest_api.main.id
+  rest_api_id   = aws_api_gateway_rest_api.main.id
   deployment_id = aws_api_gateway_deployment.openapi_sample.id
-  stage_name = "develop"
+  stage_name    = "develop"
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway.arn
