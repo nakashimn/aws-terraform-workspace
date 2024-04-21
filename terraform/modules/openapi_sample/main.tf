@@ -59,11 +59,6 @@ resource "aws_lb_target_group" "main" {
 }
 
 resource "aws_lb_listener" "main" {
-  depends_on = [
-    aws_lb.main,
-    aws_lb_target_group.main
-  ]
-
   load_balancer_arn = aws_lb.main.arn
   port              = var.open_port
   protocol          = "TCP"
@@ -78,12 +73,6 @@ resource "aws_lb_listener" "main" {
 # ECS Service
 ################################################################################
 resource "aws_ecs_service" "main" {
-  depends_on = [
-    aws_ecs_cluster.main,
-    aws_ecs_task_definition.main,
-    aws_lb_listener.main
-  ]
-
   name            = local.name
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.main.arn
@@ -96,17 +85,12 @@ resource "aws_ecs_service" "main" {
   }
   load_balancer {
     target_group_arn = aws_lb_target_group.main.arn
-    container_name   = local.name
+    container_name   = aws_ecr_repository.main.name
     container_port   = var.container_port
   }
 }
 
 resource "aws_ecs_task_definition" "main" {
-  depends_on = [
-    aws_ecr_repository.main,
-    aws_cloudwatch_log_group.main
-  ]
-
   family                   = local.name
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
@@ -117,7 +101,7 @@ resource "aws_ecs_task_definition" "main" {
   container_definitions = jsonencode(
     [
       {
-        name      = local.name
+        name      = aws_ecr_repository.main.name
         image     = "${aws_ecr_repository.main.repository_url}:${local.version}"
         cpu       = 512
         memory    = 1024
@@ -178,8 +162,6 @@ resource "aws_security_group_rule" "egress" {
 # CodeBuild
 ################################################################################
 resource "aws_codebuild_project" "main" {
-  depends_on = [aws_codebuild_source_credential.main]
-
   name          = "codebuild-${local.name}"
   service_role  = var.codebuild_role.arn
   build_timeout = 60
@@ -199,7 +181,7 @@ resource "aws_codebuild_project" "main" {
     buildspec = templatefile("${path.module}/buildspec/buildspec.yaml", {
       account_id      = var.account_id
       region          = var.region
-      repository_name = local.repository_name
+      repository_name = aws_ecr_repository.main.name
       repository_url  = aws_ecr_repository.main.repository_url
       version         = local.version
     })
@@ -227,8 +209,6 @@ resource "aws_codebuild_source_credential" "main" {
 }
 
 resource "aws_codebuild_webhook" "main" {
-  depends_on = [aws_codebuild_project.main]
-
   project_name = aws_codebuild_project.main.name
   build_type   = "BUILD"
   filter_group {

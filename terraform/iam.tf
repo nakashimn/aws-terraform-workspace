@@ -31,7 +31,7 @@ resource "aws_iam_role" "eventbridge_scheduler" {
     { principal = "events.amazonaws.com" }
   )
   managed_policy_arns = [
-    aws_iam_policy.eventbridge_scheduler_role.arn
+    "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceEventsRole"
   ]
 }
 
@@ -270,27 +270,6 @@ resource "aws_iam_policy" "ecs_service_role" {
   )
 }
 
-resource "aws_iam_policy" "eventbridge_scheduler_role" {
-  name = "EventbridgeSchedulerRole"
-  policy = jsonencode(
-    {
-      "Version" = "2012-10-17",
-      "Statement" = [
-        {
-          Effect   = "Allow"
-          Action   = "iam:PassRole"
-          Resource = "*"
-        },
-        {
-          Effect   = "Allow"
-          Action   = "ecs:RunTask"
-          Resource = "*"
-        }
-      ]
-    }
-  )
-}
-
 resource "aws_iam_policy" "codebuild_role" {
   name = "CodebuildRole"
   policy = jsonencode(
@@ -300,17 +279,11 @@ resource "aws_iam_policy" "codebuild_role" {
         {
           "Effect" = "Allow",
           "Action" = [
+            "ecr:*",
             "logs:*"
           ],
           "Resource" : "*"
         },
-        {
-          "Effect" : "Allow",
-          "Action" : [
-            "ecr:*"
-          ],
-          "Resource" : "*"
-        }
       ]
     }
   )

@@ -34,21 +34,17 @@ resource "aws_cloudwatch_event_rule" "main" {
 }
 
 resource "aws_cloudwatch_event_target" "main" {
-  depends_on = [
-    aws_cloudwatch_event_rule.main,
-    aws_ecs_cluster.main,
-    aws_ecs_task_definition.main
-  ]
-
   rule     = aws_cloudwatch_event_rule.main.name
   arn      = aws_ecs_cluster.main.arn
   role_arn = var.eventbridge_scheduler_role.arn
   ecs_target {
     task_definition_arn = aws_ecs_task_definition.main.arn
+    task_count          = 1
+    launch_type         = "FARGATE"
     network_configuration {
-      assign_public_ip = false
+      assign_public_ip = false  # subnet.map_public_ip_on_launchに合わせる
       subnets          = var.subnet_ids
-      security_groups  = var.security_group_ids
+      security_groups  = [aws_security_group.main.id]
     }
   }
 }
@@ -61,11 +57,6 @@ resource "aws_ecs_cluster" "main" {
 }
 
 resource "aws_ecs_task_definition" "main" {
-  depends_on = [
-    aws_ecr_repository.main,
-    aws_cloudwatch_log_group.main
-  ]
-
   family                   = local.name
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
@@ -76,7 +67,7 @@ resource "aws_ecs_task_definition" "main" {
   container_definitions = jsonencode(
     [
       {
-        name      = local.name
+        name      = aws_ecr_repository.main.name
         image     = "${aws_ecr_repository.main.repository_url}:${local.version}"
         cpu       = 512
         memory    = 1024
@@ -95,4 +86,22 @@ resource "aws_ecs_task_definition" "main" {
       }
     ]
   )
+}
+
+################################################################################
+# SecurityGroup
+################################################################################
+
+resource "aws_security_group" "main" {
+  name   = "main"
+  vpc_id = var.vpc_id
+}
+
+resource "aws_security_group_rule" "egress" {
+  security_group_id = aws_security_group.main.id
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  cidr_blocks       = ["0.0.0.0/0"]
 }
