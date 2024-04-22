@@ -4,6 +4,10 @@
 # VPC定義
 resource "aws_vpc" "main" {
   cidr_block = var.cidr_block
+
+  tags = {
+    name = "terraform"
+  }
 }
 
 ################################################################################
@@ -20,8 +24,9 @@ resource "aws_subnet" "public" {
   )
   availability_zone       = local.availability_zones[count.index].name
   map_public_ip_on_launch = true
+
   tags = {
-    Name = "nakashimn-terraform-public-${local.availability_zones[count.index].zone_id}"
+    Name = "terraform-public-${local.availability_zones[count.index].zone_id}"
   }
 }
 
@@ -62,8 +67,9 @@ resource "aws_subnet" "private" {
   )
   availability_zone       = local.availability_zones[count.index].name
   map_public_ip_on_launch = false
+
   tags = {
-    Name = "nakashimn-terraform-private-${local.availability_zones[count.index].zone_id}"
+    Name = "terraform-private-${local.availability_zones[count.index].zone_id}"
   }
 }
 

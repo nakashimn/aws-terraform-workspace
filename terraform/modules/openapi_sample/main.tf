@@ -8,6 +8,46 @@ locals {
 }
 
 ################################################################################
+#
+################################################################################
+data "aws_caller_identity" "current" {}
+data "aws_availability_zones" "available" {}
+
+data "aws_vpc" "root" {
+  filter {
+    name = "tag:name"
+    values = ["terraform"]
+  }
+}
+data "aws_subnets" "public" {
+  filter {
+    name = "vpc-id"
+    values = [data.aws_vpc.root.id]
+  }
+  filter {
+    name = "map-public-ip-on-launch"
+    values = [true]
+  }
+}
+
+data "aws_subnet" "public" {
+    for_each = toset(data.aws_subnets.public.ids)
+
+    vpc_id  = data.aws_vpc.root.id
+    id      = each.value
+}
+
+data "aws_iam_role" "ecs_task_execution" { name = "ECSTaskExecutionRole" }
+data "aws_iam_role" "ecs_task" { name = "ECSTaskRole" }
+data "aws_iam_role" "codebuild" { name = "CodeBuildRole" }
+
+data "aws_api_gateway_rest_api" "main" { name = "aws-api-gateway-terraform" }
+data "aws_api_gateway_resource" "main" {
+  rest_api_id = data.aws_api_gateway_rest_api.main.id
+  path = "/"
+}
+
+################################################################################
 # Repository
 ################################################################################
 resource "aws_ecr_repository" "main" {
@@ -40,13 +80,13 @@ resource "aws_lb" "main" {
   name               = "alb-openapi-sample"
   load_balancer_type = "network"
   internal           = true
-  subnets            = var.subnet_ids
+  subnets            = data.aws_subnets.public.ids
 }
 
 resource "aws_lb_target_group" "main" {
   name        = "openapi-sample"
   target_type = "ip"
-  vpc_id      = var.vpc_id
+  vpc_id      = data.aws_vpc.root.id
   port        = var.container_port
   protocol    = "TCP"
   health_check {
@@ -79,7 +119,7 @@ resource "aws_ecs_service" "main" {
   desired_count   = 1
   launch_type     = "FARGATE"
   network_configuration {
-    subnets          = var.subnet_ids
+    subnets          = data.aws_subnets.public.ids
     security_groups  = [aws_security_group.main.id]
     assign_public_ip = true
   }
@@ -96,8 +136,8 @@ resource "aws_ecs_task_definition" "main" {
   network_mode             = "awsvpc"
   cpu                      = 512
   memory                   = 1024
-  execution_role_arn       = var.ecs_task_execution_role.arn
-  task_role_arn            = var.ecs_task_role.arn
+  execution_role_arn       = data.aws_iam_role.ecs_task_execution.arn
+  task_role_arn            = data.aws_iam_role.ecs_task.arn
   container_definitions = jsonencode(
     [
       {
@@ -134,7 +174,7 @@ resource "aws_ecs_task_definition" "main" {
 # SecurityGroup定義
 resource "aws_security_group" "main" {
   name   = local.name
-  vpc_id = var.vpc_id
+  vpc_id = data.aws_vpc.root.id
 }
 
 # SecurityGroupRule(外部向けインバウンドルール)定義
@@ -163,7 +203,7 @@ resource "aws_security_group_rule" "egress" {
 ################################################################################
 resource "aws_codebuild_project" "main" {
   name          = "codebuild-${local.name}"
-  service_role  = var.codebuild_role.arn
+  service_role  = data.aws_iam_role.codebuild.arn
   build_timeout = 60
 
   environment {
@@ -179,7 +219,7 @@ resource "aws_codebuild_project" "main" {
 
   source {
     buildspec = templatefile("${path.module}/buildspec/buildspec.yaml", {
-      account_id      = var.account_id
+      account_id      = data.aws_caller_identity.current.id
       region          = var.region
       repository_name = aws_ecr_repository.main.name
       repository_url  = aws_ecr_repository.main.repository_url
@@ -221,4 +261,32 @@ resource "aws_codebuild_webhook" "main" {
       pattern = "develop"
     }
   }
+}
+
+
+################################################################################
+# APIGateway
+################################################################################
+# APIGatewayとNLBのDNSの紐づけ
+resource "aws_api_gateway_integration" "openapi_sample" {
+  count                   = length(aws_api_gateway_method.main)
+  rest_api_id             = aws_api_gateway_rest_api.main.id
+  resource_id             = aws_api_gateway_resource.main.id
+  http_method             = aws_api_gateway_method.main[count.index].http_method
+  integration_http_method = aws_api_gateway_method.main[count.index].http_method
+  type                    = "HTTP_PROXY"
+  uri                     = "http://${aws_lb.dns_name}/{proxy}"
+  cache_key_parameters    = ["method.request.path.proxy"]
+  request_parameters = {
+    "integration.request.path.proxy" = "method.request.path.proxy" # Proxy統合有効化
+  }
+
+  connection_type = "VPC_LINK"
+  connection_id   = aws_api_gateway_vpc_link.openapi_sample.id
+}
+
+# APIGatewayとVPCLinkの紐づけ
+resource "aws_api_gateway_vpc_link" "openapi_sample" {
+  name        = "api-gateway-vpc-link-openapi-sample"
+  target_arns = [module.openapi_sample.aws_lb.arn]
 }
