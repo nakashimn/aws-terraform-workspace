@@ -42,7 +42,7 @@ resource "aws_cloudwatch_event_target" "main" {
     task_count          = 1
     launch_type         = "FARGATE"
     network_configuration {
-      assign_public_ip = false  # subnet.map_public_ip_on_launchに合わせる
+      assign_public_ip = false # subnet.map_public_ip_on_launchに合わせる
       subnets          = var.subnet_ids
       security_groups  = [aws_security_group.main.id]
     }
