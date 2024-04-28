@@ -1,6 +1,14 @@
+################################################################################
+# Params
+################################################################################
+variable "environment" { description = "環境(dev/stg/pro)" }
 variable "region" { description = "利用するリージョン" }
-variable "ecs_task_execution_role" { description = "タスク実行ロール" }
-variable "ecs_task_role" { description = "タスクロール" }
-variable "eventbridge_scheduler_role" { description = "スケジューラのロール" }
-variable "subnet_ids" { description = "利用するSubnetのIDのリスト" }
-variable "vpc_id" { description = "利用するVPCのID" }
+
+################################################################################
+# LocalParams
+################################################################################
+locals {
+  name            = "ecs-dev-ts-template"
+  repository_name = "ecs_dev_ts_template"
+  version         = "develop"
+}

@@ -1,17 +1,6 @@
 ################################################################################
 # Role
 ################################################################################
-resource "aws_iam_role" "eventbridge_scheduler" {
-  name = "EventbridgeSchedulerRole"
-  assume_role_policy = templatefile(
-    "${path.module}/assets/templates/assume_role_policy.tpl",
-    { principal = "events.amazonaws.com" }
-  )
-  managed_policy_arns = [
-    "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceEventsRole"
-  ]
-}
-
 resource "aws_iam_role" "api_gateway" {
   name = "RestAPIGateway"
   assume_role_policy = templatefile(
