@@ -2,7 +2,7 @@
 # Role
 ################################################################################
 resource "aws_iam_role" "ecs_task_execution" {
-  name = "ECSTaskExecutionRole"
+  name = "ECSTaskExecutionRole-${local.name}"
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
     { principal = "ecs-tasks.amazonaws.com" }
@@ -14,7 +14,7 @@ resource "aws_iam_role" "ecs_task_execution" {
 }
 
 resource "aws_iam_role" "ecs_task" {
-  name = "ECSTaskRole"
+  name = "ECSTaskRole-${local.name}"
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
     { principal = "ecs-tasks.amazonaws.com" }
@@ -25,7 +25,7 @@ resource "aws_iam_role" "ecs_task" {
 }
 
 resource "aws_iam_role" "codebuild" {
-  name = "CodeBuildRole"
+  name = "CodeBuildRole-${local.name}"
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
     { principal = "codebuild.amazonaws.com" }
@@ -39,7 +39,7 @@ resource "aws_iam_role" "codebuild" {
 # Policy
 ################################################################################
 resource "aws_iam_policy" "ecs_service_role" {
-  name = "ECSServiceRolePolicy"
+  name = "ECSServiceRolePolicy-${local.name}"
 
   policy = jsonencode(
     {
@@ -249,7 +249,7 @@ resource "aws_iam_policy" "ecs_service_role" {
 }
 
 resource "aws_iam_policy" "codebuild_role" {
-  name = "CodebuildRole"
+  name = "CodebuildRole-${local.name}"
   policy = jsonencode(
     {
       "Version" = "2012-10-17",
