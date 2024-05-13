@@ -2,17 +2,27 @@
 # CodeBuild
 ################################################################################
 resource "aws_codebuild_project" "main" {
-  name          = "codebuild-${local.name}"
-  service_role  = aws_iam_role.codebuild.arn
-  build_timeout = 60
-
+  name           = "codebuild-${local.name}"
+  service_role   = aws_iam_role.codebuild.arn
+  build_timeout  = 60
+  source_version = "develop"
   environment {
     compute_type                = "BUILD_GENERAL1_SMALL"
     image                       = "aws/codebuild/standard:5.0"
     type                        = "LINUX_CONTAINER"
+    privileged_mode             = true
     image_pull_credentials_type = "CODEBUILD"
+
+
     environment_variable {
-      name  = "BITBUCKET_AUTHORIZATION_TOKEN"
+      name  = "GIT_ASKPASS"
+      type  = "PLAINTEXT"
+      value = "/usr/local/bin/git-askpass-helper"
+    }
+
+    environment_variable {
+      name  = "BITBUCKET_OAUTH_TOKEN"
+      type  = "PLAINTEXT"
       value = aws_codebuild_source_credential.main.token
     }
   }
@@ -28,14 +38,16 @@ resource "aws_codebuild_project" "main" {
     type                = "BITBUCKET"
     location            = "https://bitbucket.org/nakashimn/${local.repository_name}.git"
     git_clone_depth     = 1
-    report_build_status = false
+    report_build_status = true
+
+    git_submodules_config {
+      fetch_submodules = false
+    }
   }
 
   lifecycle {
     ignore_changes = [project_visibility]
   }
-
-  source_version = "develop"
 
   artifacts {
     type = "NO_ARTIFACTS"

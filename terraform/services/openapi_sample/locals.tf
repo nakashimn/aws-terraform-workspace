@@ -1,5 +1,8 @@
 ################################################################################
-# Params
+# LocalParams
 ################################################################################
-variable "environment" { description = "環境(dev/stg/pro)" }
-variable "region" { description = "利用するリージョン" }
+locals {
+  name            = "openapi-sample"
+  repository_name = "openapi_sample"
+  version         = "develop"
+}

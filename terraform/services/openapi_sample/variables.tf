@@ -9,12 +9,3 @@ variable "open_port" {
   description = "NLBが受け付けるポート"
 }
 variable "region" { description = "利用するリージョン" }
-
-################################################################################
-# LocalParams
-################################################################################
-locals {
-  name            = "openapi-sample"
-  repository_name = "openapi_sample"
-  version         = "develop"
-}
