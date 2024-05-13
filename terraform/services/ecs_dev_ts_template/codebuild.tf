@@ -13,7 +13,6 @@ resource "aws_codebuild_project" "main" {
     privileged_mode             = true
     image_pull_credentials_type = "CODEBUILD"
 
-
     environment_variable {
       name  = "GIT_ASKPASS"
       type  = "PLAINTEXT"
