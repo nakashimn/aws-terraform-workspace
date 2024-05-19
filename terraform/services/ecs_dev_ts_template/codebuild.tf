@@ -35,7 +35,7 @@ resource "aws_codebuild_project" "main" {
       version         = local.version
     })
     type                = "BITBUCKET"
-    location            = "https://bitbucket.org/nakashimn/${local.repository_name}.git"
+    location            = local.bitbucket_repository_url
     git_clone_depth     = 1
     report_build_status = true
 
