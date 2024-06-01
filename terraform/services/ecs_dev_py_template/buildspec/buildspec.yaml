@@ -8,9 +8,15 @@ phases:
   build:
     commands:
       - docker build --target prod -t ${repository_name}:${version} .
-
+      - docker build --target doc -t documentation-image .
+      - aws s3 rm --recursive "s3://${artifacts_bucket}/"
+      - docker cp $(docker create documentation-image):/doc documents
   post_build:
     commands:
-      - echo post_build
       - docker tag ${repository_name}:${version} ${repository_url}:${version}
       - docker push ${repository_url}:${version}
+
+artifacts:
+  files:
+    - "**/*"
+  base-directory: documents

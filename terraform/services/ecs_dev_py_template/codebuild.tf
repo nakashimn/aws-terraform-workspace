@@ -20,11 +20,12 @@ resource "aws_codebuild_project" "main" {
 
   source {
     buildspec = templatefile("${path.module}/buildspec/buildspec.yaml", {
-      account_id      = data.aws_caller_identity.current.id
-      region          = var.region
-      repository_name = aws_ecr_repository.main.name
-      repository_url  = aws_ecr_repository.main.repository_url
-      version         = local.version
+      account_id       = data.aws_caller_identity.current.id
+      artifacts_bucket = data.aws_s3_bucket.documents.bucket
+      region           = var.region
+      repository_name  = aws_ecr_repository.main.name
+      repository_url   = aws_ecr_repository.main.repository_url
+      version          = local.version
     })
     type                = "BITBUCKET"
     location            = local.bitbucket_repository_url
@@ -39,7 +40,9 @@ resource "aws_codebuild_project" "main" {
   source_version = "develop"
 
   artifacts {
-    type = "NO_ARTIFACTS"
+    type = "S3"
+    location = data.aws_s3_bucket.documents.bucket
+    encryption_disabled = true
   }
 }
 

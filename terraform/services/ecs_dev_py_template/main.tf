@@ -15,6 +15,13 @@ provider "aws" {
   profile = "terraform"
 }
 
+provider "aws" {
+  alias   = "as_global"
+  region  = "us-east-1"
+  profile = "terraform"
+}
+
+
 ################################################################################
 # DataSources
 ################################################################################
@@ -49,3 +56,5 @@ data "aws_subnets" "private" {
     values = [false]
   }
 }
+
+data "aws_s3_bucket" "documents" { bucket = "nakashimn-documents" }
