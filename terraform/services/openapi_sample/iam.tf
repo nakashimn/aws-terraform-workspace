@@ -35,6 +35,10 @@ resource "aws_iam_role" "codebuild" {
   ]
 }
 
+data "aws_iam_role" "autoscaling" {
+  name = "AWSServiceRoleForApplicationAutoScaling_ECSService"
+}
+
 ################################################################################
 # Policy
 ################################################################################
