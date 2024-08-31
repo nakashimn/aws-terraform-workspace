@@ -7,3 +7,7 @@ open_ports  = [
   80, 443, 3000, 8000
 ]
 region = "ap-northeast-3"
+
+resource_toggles = {
+  enable_nat_gateway = false
+}

@@ -88,5 +88,5 @@ resource "aws_wafv2_ip_set" "local" {
   name               = "local-ip"
   scope              = "CLOUDFRONT"
   ip_address_version = "IPV4"
-  addresses          = ["0.0.0.0/0"]  # set acceptable IPAddress
+  addresses          = ["0.0.0.0/1", "128.0.0.0/1"]  # set acceptable IPAddress
 }

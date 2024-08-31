@@ -3,6 +3,7 @@
 ################################################################################
 variable "allowed_ip_addresses" { description = "アクセスを許可するIPアドレスのリスト" }
 variable "cidr_block" { description = "VPNのCIDRブロック" }
+variable "resource_toggles" { description = "Resourceの有効/無効切替用変数" }
 variable "environment" { description = "環境(dev/stg/pro)" }
 variable "open_ports" { description = "開放ポートのリスト" }
 variable "region" { description = "リージョン" }

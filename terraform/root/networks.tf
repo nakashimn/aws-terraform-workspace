@@ -79,9 +79,12 @@ resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
 
   # NATGatewayと紐づけ
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = var.environment == "pro" ? aws_nat_gateway.main[count.index].id : aws_nat_gateway.main[0].id
+  dynamic "route" {
+    for_each = var.resource_toggles.enable_nat_gateway ? [1] : []
+    content {
+      cidr_block     = "0.0.0.0/0"
+      nat_gateway_id = var.environment == "pro" ? aws_nat_gateway.main[count.index].id : aws_nat_gateway.main[0].id
+    }
   }
 
   tags = {
@@ -109,7 +112,7 @@ resource "aws_internet_gateway" "main" {
 ################################################################################
 #NATGateway定義
 resource "aws_nat_gateway" "main" {
-  count         = length(aws_subnet.public)
+  count         = var.resource_toggles.enable_nat_gateway ? length(aws_subnet.public) : 0
   allocation_id = aws_eip.nat_gateway[count.index].id
   subnet_id     = aws_subnet.public[count.index].id
 
@@ -120,7 +123,7 @@ resource "aws_nat_gateway" "main" {
 
 # NATGateway用ElasticIP定義
 resource "aws_eip" "nat_gateway" {
-  count = length(aws_subnet.public)
+  count = var.resource_toggles.enable_nat_gateway ? length(aws_subnet.public) : 0
 
   tags = {
     Name = "elastic-ip-${count.index}"
