@@ -9,7 +9,7 @@ resource "aws_ecs_cluster" "main" {
 # ECS Service
 ################################################################################
 resource "aws_ecs_service" "ecs_anywhere_service" {
-  name            = "ecs-anywhere-service"
+  name            = "${local.service_group}-${local.name}-ecs-anywhere-service-${var.environment}"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.ecs_anywhere_task.arn
   desired_count   = 1
@@ -17,7 +17,7 @@ resource "aws_ecs_service" "ecs_anywhere_service" {
 }
 
 resource "aws_ecs_task_definition" "ecs_anywhere_task" {
-  family                   = "ecs-anywhere-task"
+  family                   = "${local.service_group}-${local.name}-ecs-anywhere-task-${var.environment}"
   network_mode             = "bridge"
   requires_compatibilities = ["EXTERNAL"]
 

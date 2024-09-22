@@ -1,17 +1,16 @@
 ################################################################################
 # SecurityGroup
 ################################################################################
-
+# SecurityGroup定義
 resource "aws_security_group" "main" {
-  name   = local.name
+  name   = "${local.service_group}-${local.name}-sg-${var.environment}"
   vpc_id = data.aws_vpc.root.id
-}
 
-resource "aws_security_group_rule" "egress" {
-  security_group_id = aws_security_group.main.id
-  type              = "egress"
+  egress {
   from_port         = 0
   to_port           = 0
   protocol          = "-1"
   cidr_blocks       = ["0.0.0.0/0"]
+  }
+
 }

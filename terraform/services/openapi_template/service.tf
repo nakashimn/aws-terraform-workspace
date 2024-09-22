@@ -9,7 +9,7 @@ resource "aws_ecs_cluster" "main" {
 ################################################################################
 # ECS Service
 ################################################################################
-# ECSサービス定義
+# サービス定義
 resource "aws_ecs_service" "main" {
   name = "${local.service_group}-${local.name}-${var.environment}"
   cluster         = aws_ecs_cluster.main.id
@@ -38,7 +38,7 @@ resource "aws_ecs_service" "main" {
 
 }
 
-# ECSタスク定義
+# タスク定義
 resource "aws_ecs_task_definition" "main" {
   family                   = "${local.service_group}-${local.name}-${var.environment}"
   requires_compatibilities = ["FARGATE"]

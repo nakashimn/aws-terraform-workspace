@@ -1,8 +1,9 @@
 ################################################################################
 # Role
 ################################################################################
+# ECSAnywhere用ポリシー
 resource "aws_iam_role" "ecs_anywhere" {
-  name = "ECSAnywhereRole-${local.name}"
+  name = "${local.service_group}-${local.name}-ECSAnywhereRole-${var.environment}"
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
     { principal = "ecs.amazonaws.com" }

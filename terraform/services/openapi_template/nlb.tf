@@ -3,7 +3,7 @@
 ################################################################################
 # NLB定義
 resource "aws_lb" "main" {
-  name                             = substr(local.name, 0, 6)
+  name                             = "${substr(local.name, 0, 28)}-${var.environment}"
   load_balancer_type               = "network"
   internal                         = true
   subnets                          = data.aws_subnets.private.ids
@@ -12,7 +12,7 @@ resource "aws_lb" "main" {
 
 # NLBターゲットグループ定義
 resource "aws_lb_target_group" "main" {
-  name        = substr(local.name, 0, 6)
+  name        = aws_lb.main.name
   target_type = "ip"
   vpc_id      = data.aws_vpc.root.id
   port        = var.container_port
@@ -43,7 +43,7 @@ resource "aws_lb_listener" "main" {
 resource "aws_lb" "debug" {
   count = var.environment == "dev" ? 1 : 0
 
-  name                             = substr(local.name, 0, 6)
+  name                             = "${substr(local.name, 0, 22)}-debug-${var.environment}"
   load_balancer_type               = "network"
   internal                         = false
   subnets                          = data.aws_subnets.public.ids
@@ -54,7 +54,7 @@ resource "aws_lb" "debug" {
 resource "aws_lb_target_group" "debug" {
   count = var.environment == "dev" ? 1 : 0
 
-  name        = substr(local.name, 0, 6)
+  name        = aws_lb.debug.name
   target_type = "ip"
   vpc_id      = data.aws_vpc.root.id
   port        = var.container_port

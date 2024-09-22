@@ -3,9 +3,10 @@
 ################################################################################
 # Codebuildプロジェクト定義
 resource "aws_codebuild_project" "main" {
-  name          = "${local.service_group}-${local.name}-codebuild-${var.environment}"
-  service_role  = aws_iam_role.codebuild.arn
-  build_timeout = 60
+  name           = "${local.service_group}-${local.name}-codebuild-${var.environment}"
+  service_role   = aws_iam_role.codebuild.arn
+  source_version = "develop"
+  build_timeout  = 60
 
   environment {
     compute_type                = "BUILD_GENERAL1_SMALL"
@@ -27,7 +28,7 @@ resource "aws_codebuild_project" "main" {
       version         = local.version
     })
     type                = "BITBUCKET"
-    location            = "https://bitbucket.org/nakashimn/${local.repository_name}.git"
+    location            = local.bitbucket_repository_url
     git_clone_depth     = 1
     report_build_status = false
   }
@@ -35,8 +36,6 @@ resource "aws_codebuild_project" "main" {
   lifecycle {
     ignore_changes = [project_visibility]
   }
-
-  source_version = "develop"
 
   artifacts {
     type = "NO_ARTIFACTS"

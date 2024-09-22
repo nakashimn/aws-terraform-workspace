@@ -1,8 +1,9 @@
 ################################################################################
 # Role
 ################################################################################
+# ECS用タスク実行ロール
 resource "aws_iam_role" "ecs_task_execution" {
-  name = "ECSTaskExecutionRole-${local.name}"
+  name = "${local.service_group}-${local.name}-ECSTaskExecutionRole-${var.environment}"
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
     { principal = "ecs-tasks.amazonaws.com" }
@@ -13,8 +14,9 @@ resource "aws_iam_role" "ecs_task_execution" {
   ]
 }
 
+# ECS用タスクロール
 resource "aws_iam_role" "ecs_task" {
-  name = "ECSTaskRole-${local.name}"
+  name = "${local.service_group}-${local.name}-ECSTaskRole-${var.environment}"
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
     { principal = "ecs-tasks.amazonaws.com" }
@@ -24,8 +26,9 @@ resource "aws_iam_role" "ecs_task" {
   ]
 }
 
+# Codebuild用タスクロール
 resource "aws_iam_role" "codebuild" {
-  name = "CodeBuildRole-${local.name}"
+  name = "${local.service_group}-${local.name}-CodeBuildRole-${var.environment}"
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
     { principal = "codebuild.amazonaws.com" }
@@ -35,8 +38,9 @@ resource "aws_iam_role" "codebuild" {
   ]
 }
 
+# EventBridge用ロール
 resource "aws_iam_role" "eventbridge_scheduler" {
-  name = "EventbridgeSchedulerRole-${local.name}"
+  name = "${local.service_group}-${local.name}-EventbridgeSchedulerRole-${var.environment}"
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
     { principal = "events.amazonaws.com" }
@@ -50,7 +54,7 @@ resource "aws_iam_role" "eventbridge_scheduler" {
 # Policy
 ################################################################################
 resource "aws_iam_policy" "ecs_service_role" {
-  name = "ECSServiceRolePolicy-${local.name}"
+  name = "${local.service_group}-${local.name}-ECSServiceRolePolicy-${var.environment}"
 
   policy = jsonencode(
     {
@@ -260,7 +264,7 @@ resource "aws_iam_policy" "ecs_service_role" {
 }
 
 resource "aws_iam_policy" "codebuild_role" {
-  name = "CodebuildRole-${local.name}"
+  name = "${local.service_group}-${local.name}-CodebuildRole-${local.name}"
   policy = jsonencode(
     {
       "Version" = "2012-10-17",
@@ -269,7 +273,8 @@ resource "aws_iam_policy" "codebuild_role" {
           "Effect" = "Allow",
           "Action" = [
             "ecr:*",
-            "logs:*"
+            "logs:*",
+            "s3:*"
           ],
           "Resource" : "*"
         },

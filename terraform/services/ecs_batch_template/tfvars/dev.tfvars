@@ -1,7 +1,7 @@
 # サービスグループ定義
 vendor    = "nakashimn"
 countory  = "jp"
-service   = "ecs_anywhere_template"
+service   = "py_template"
 
 # 環境設定
 environment    = "dev"

@@ -2,9 +2,10 @@
 # CodeBuild
 ################################################################################
 resource "aws_codebuild_project" "main" {
-  name          = "codebuild-${local.name}"
-  service_role  = aws_iam_role.codebuild.arn
-  build_timeout = 60
+  name           = "${local.service_group}-${local.name}-codebuild-${var.environment}"
+  service_role   = aws_iam_role.codebuild.arn
+  source_version = "develop"
+  build_timeout  = 60
 
   environment {
     compute_type                = "BUILD_GENERAL1_SMALL"
@@ -13,7 +14,7 @@ resource "aws_codebuild_project" "main" {
     privileged_mode             = true
     image_pull_credentials_type = "CODEBUILD"
     environment_variable {
-      name  = "BITBUCKET_AUTHORIZATION_TOKEN"
+      name  = "BITBUCKET_OAUTH_TOKEN"
       value = aws_codebuild_source_credential.main.token
     }
   }
@@ -36,8 +37,6 @@ resource "aws_codebuild_project" "main" {
   lifecycle {
     ignore_changes = [project_visibility]
   }
-
-  source_version = "develop"
 
   artifacts {
     type = "S3"

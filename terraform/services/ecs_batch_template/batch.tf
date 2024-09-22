@@ -1,11 +1,13 @@
 ################################################################################
 # Scheduler
 ################################################################################
+# イベントルール定義
 resource "aws_cloudwatch_event_rule" "main" {
-  name                = local.name
+  name                = "${local.service_group}-${local.name}-batch-${var.environment}"
   schedule_expression = "cron(0 15 * * ? *)" # UTC
 }
 
+# イベントターゲット定義
 resource "aws_cloudwatch_event_target" "main" {
   rule     = aws_cloudwatch_event_rule.main.name
   arn      = aws_ecs_cluster.main.arn
@@ -25,12 +27,14 @@ resource "aws_cloudwatch_event_target" "main" {
 ################################################################################
 # Task
 ################################################################################
+# クラスター定義
 resource "aws_ecs_cluster" "main" {
-  name = local.name
+  name = "${local.service_group}-${local.name}-${var.environment}"
 }
 
+# タスク定義
 resource "aws_ecs_task_definition" "main" {
-  family                   = local.name
+  family                   = "${local.service_group}-${local.name}-${var.environment}"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = 512
@@ -46,13 +50,12 @@ resource "aws_ecs_task_definition" "main" {
         memory    = 1024
         essential = true
         environment = [
-          { name = "PORT", value = "3000" }
         ]
         logConfiguration = {
           logDriver = "awslogs",
           options = {
             awslogs-region        = var.region
-            awslogs-stream-prefix = local.name
+            awslogs-stream-prefix = "${local.service_group}-${local.name}-${var.environment}"
             awslogs-group         = aws_cloudwatch_log_group.main.name
           }
         }

@@ -40,7 +40,7 @@ resource "aws_iam_role" "codebuild" {
 
 # APIGateway用Role
 resource "aws_iam_role" "api_gateway" {
-  name = "RestAPIGateway"
+  name = "${local.service_group}-${local.name}-RestAPIGateway-${var.environment}"
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
     { principal = "apigateway.amazonaws.com" }
@@ -286,7 +286,7 @@ resource "aws_iam_policy" "codebuild_role" {
 
 # APIGatewayLogging用ポリシー
 resource "aws_iam_role_policy" "api_gateway_log_policy" {
-  name = "APIGatewayLogPolicy"
+  name = "${local.service_group}-${local.name}-APIGatewayLogPolicy-${var.environment}"
   role = aws_iam_role.api_gateway.id
 
   policy = jsonencode(
