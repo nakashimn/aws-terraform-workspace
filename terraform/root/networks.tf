@@ -15,7 +15,7 @@ resource "aws_vpc" "main" {
 ################################################################################
 # PublicSubnet定義
 resource "aws_subnet" "public" {
-  count  = length(local.availability_zones) # AvailabilityZoneの数だけ生成
+  count  = var.environment == "dev" ? 1 : length(local.availability_zones) # AvailabilityZoneの数だけ生成
   vpc_id = aws_vpc.main.id
   cidr_block = cidrsubnet(
     aws_vpc.main.cidr_block,
@@ -58,7 +58,7 @@ resource "aws_route_table_association" "public" {
 ################################################################################
 # PrivateSubnet定義
 resource "aws_subnet" "private" {
-  count  = length(local.availability_zones) # AvailabilityZoneの数だけ生成
+  count  = var.environment == "dev" ? 1 : length(local.availability_zones) # AvailabilityZoneの数だけ生成
   vpc_id = aws_vpc.main.id
   cidr_block = cidrsubnet(
     aws_vpc.main.cidr_block,
