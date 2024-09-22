@@ -2,6 +2,8 @@
 # LocalParams
 ################################################################################
 locals {
-  name            = "sagemaker-template"
-  version         = "develop"
+  # サービスグループ名
+  service_group            = "${var.vendor}-${var.countory}-${var.service}"
+  # コンポーネント名称
+  name                     = "sagemaker-template"
 }

@@ -1,7 +1,7 @@
 # サービスグループ定義
 vendor    = "nakashimn"
 countory  = "jp"
-service   = "templates"
+service   = "openapi-template"
 
 # 環境設定
 environment    = "dev"
