@@ -1,6 +1,7 @@
 ################################################################################
 # Cloudfront
 ################################################################################
+# ドキュメントホスティング用CloudFront定義
 resource "aws_cloudfront_distribution" "documents" {
     origin {
         domain_name = aws_s3_bucket.documents.bucket_regional_domain_name
@@ -26,8 +27,8 @@ resource "aws_cloudfront_distribution" "documents" {
 
         viewer_protocol_policy = "redirect-to-https"
         min_ttl = 0
-        default_ttl = 3600
-        max_ttl = 86400
+        default_ttl = 0
+        max_ttl = 0
     }
 
     restrictions {
@@ -41,16 +42,18 @@ resource "aws_cloudfront_distribution" "documents" {
     }
 }
 
+# CloudFrontのアクセスコントロール定義
 resource "aws_cloudfront_origin_access_control" "documents" {
-  name                              = "cf-documents"
+  name                              = "${local.service_group}-cf-documents-${var.environment}"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
 }
 
+# CloudFront用アクセスコントロールリスト
 resource "aws_wafv2_web_acl" "documents" {
   provider    = aws.as_global
-  name        = "waf-documents"
+  name        = "${local.service_group}-acl-documents-${var.environment}"
   scope       = "CLOUDFRONT"
   default_action {
     block {}
@@ -83,6 +86,7 @@ resource "aws_wafv2_web_acl" "documents" {
   }
 }
 
+# CloudFrontアクセスこのトロールのIPリスト
 resource "aws_wafv2_ip_set" "local" {
   provider           = aws.as_global
   name               = "local-ip"

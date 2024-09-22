@@ -40,6 +40,59 @@ resource "aws_api_gateway_method" "main" {
 
 # APIGatewayとVPCLinkの紐づけ
 resource "aws_api_gateway_vpc_link" "main" {
-  name        = "api-gateway-vpc-link-openapi-sample"
+  name        = "${local.service_group}-${local.name}-api-gateway-vpc-link-${var.environment}"
   target_arns = [aws_lb.main.arn]
+}
+
+# APIGatewayデプロイ定義
+resource "aws_api_gateway_deployment" "main" {
+
+  rest_api_id = data.aws_api_gateway_rest_api.main.id
+  triggers = {
+    redeployment = sha1(
+      jsonencode(
+        []
+      )
+    )
+  }
+}
+
+# APIデプロイ先Stage定義
+resource "aws_api_gateway_stage" "main" {
+  rest_api_id   = data.aws_api_gateway_rest_api.main.id
+  deployment_id = aws_api_gateway_deployment.main.id
+  stage_name    = "api"
+
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.api_gateway.arn
+    format          = replace(file("${path.module}/assets/logformat/api_gateway.json"), "\n", "")
+  }
+}
+
+# Logging用Role紐づけ
+resource "aws_api_gateway_account" "api_gateway_account" {
+  cloudwatch_role_arn = aws_iam_role.api_gateway.arn
+}
+
+# APIGateway用Logger定義
+resource "aws_cloudwatch_log_group" "api_gateway" {
+  name = "/${local.service_group}-api-gateway-${var.environment}/"
+}
+
+# APIGateway用カスタムドメイン定義
+resource "aws_api_gateway_domain_name" "main" {
+  domain_name              = aws_route53_zone.main.name
+  regional_certificate_arn = aws_acm_certificate_validation.main.certificate_arn
+
+  endpoint_configuration {
+    types = ["REGIONAL"]
+  }
+}
+
+# APIGatewayとカスタムドメインの紐づけ
+resource "aws_api_gateway_base_path_mapping" "main" {
+  api_id      = data.aws_api_gateway_rest_api.main.id
+  stage_name  = aws_api_gateway_stage.main.stage_name
+  domain_name = aws_api_gateway_domain_name.main.domain_name
+  base_path   = "api"
 }

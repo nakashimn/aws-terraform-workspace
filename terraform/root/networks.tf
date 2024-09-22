@@ -3,10 +3,10 @@
 ################################################################################
 # VPC定義
 resource "aws_vpc" "main" {
-  cidr_block = var.cidr_block
+  cidr_block = var.vpc_cidr
 
   tags = {
-    name = "terraform"
+    Name = "${local.service_group}-vpc-${var.environment}"
   }
 }
 
@@ -15,7 +15,7 @@ resource "aws_vpc" "main" {
 ################################################################################
 # PublicSubnet定義
 resource "aws_subnet" "public" {
-  count  = var.environment == "pro" ? length(local.availability_zones) : 1 # pro環境のみAvailabilityZoneの数だけ生成
+  count  = length(local.availability_zones) # AvailabilityZoneの数だけ生成
   vpc_id = aws_vpc.main.id
   cidr_block = cidrsubnet(
     aws_vpc.main.cidr_block,
@@ -26,7 +26,7 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "terraform-public-${local.availability_zones[count.index].zone_id}"
+    Name = "${local.service_group}-subnet-public-${var.environment}-${local.availability_zones[count.index].zone_id}"
   }
 }
 
@@ -42,7 +42,7 @@ resource "aws_route_table" "public" {
   }
 
   tags = {
-    Name = "route-table-public-${count.index}"
+    Name = "${local.service_group}-route-table-public-${var.environment}-${count.index}"
   }
 }
 
@@ -69,7 +69,7 @@ resource "aws_subnet" "private" {
   map_public_ip_on_launch = false
 
   tags = {
-    Name = "terraform-private-${local.availability_zones[count.index].zone_id}"
+    Name = "${local.service_group}-subnet-private-${var.environment}-${local.availability_zones[count.index].zone_id}"
   }
 }
 
@@ -88,7 +88,7 @@ resource "aws_route_table" "private" {
   }
 
   tags = {
-    Name = "route-table-private-${count.index}"
+    Name = "${local.service_group}-route-table-private-${count.index}"
   }
 }
 
@@ -112,75 +112,20 @@ resource "aws_internet_gateway" "main" {
 ################################################################################
 #NATGateway定義
 resource "aws_nat_gateway" "main" {
-  count         = var.resource_toggles.enable_nat_gateway ? length(aws_subnet.public) : 0
+  count         = var.resource_toggles.enable_nat_gateway ? (var.environment == "pro" ? length(aws_subnet.public) : 1) : 0
   allocation_id = aws_eip.nat_gateway[count.index].id
   subnet_id     = aws_subnet.public[count.index].id
 
   tags = {
-    Name = "nat-gateway-terraform-${count.index}"
+    Name = "${local.service_group}-nat-gateway-${var.environment}-${count.index}"
   }
 }
 
 # NATGateway用ElasticIP定義
 resource "aws_eip" "nat_gateway" {
-  count = var.resource_toggles.enable_nat_gateway ? length(aws_subnet.public) : 0
+  count = var.resource_toggles.enable_nat_gateway ? (var.environment == "pro" ? length(aws_subnet.public) : 1) : 0
 
   tags = {
-    Name = "elastic-ip-${count.index}"
-  }
-}
-
-################################################################################
-# Route53
-################################################################################
-# Route53ゾーン定義
-resource "aws_route53_zone" "main" {
-  name = "api.nakashimn.click"
-}
-
-# Route53レコード登録
-resource "aws_route53_record" "main" {
-  for_each = {
-    for dvo in aws_acm_certificate.main.domain_validation_options : dvo.domain_name => {
-      name   = dvo.resource_record_name
-      record = dvo.resource_record_value
-      type   = dvo.resource_record_type
-    }
-  }
-
-  allow_overwrite = true
-  name            = each.value.name
-  records         = [each.value.record]
-  ttl             = 60
-  type            = each.value.type
-  zone_id         = aws_route53_zone.main.zone_id
-}
-
-################################################################################
-# ACM
-################################################################################
-# サーバー証明書発行
-resource "aws_acm_certificate" "main" {
-  domain_name               = aws_route53_zone.main.name
-  subject_alternative_names = ["*.${aws_route53_zone.main.name}"]
-  validation_method         = "DNS"
-}
-
-# サーバー証明書の認証
-resource "aws_acm_certificate_validation" "main" {
-  certificate_arn         = aws_acm_certificate.main.arn
-  validation_record_fqdns = [for record in aws_route53_record.main : record.fqdn]
-}
-
-# APIGatewayのエイリアス登録
-resource "aws_route53_record" "api_gateway_alias" {
-  name    = aws_api_gateway_domain_name.main.domain_name
-  type    = "A"
-  zone_id = aws_route53_zone.main.id
-
-  alias {
-    evaluate_target_health = true
-    name                   = aws_api_gateway_domain_name.main.regional_domain_name
-    zone_id                = aws_api_gateway_domain_name.main.regional_zone_id
+    Name = "${local.service_group}-elastic-ip-${var.environment}-${count.index}"
   }
 }

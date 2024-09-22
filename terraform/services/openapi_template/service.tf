@@ -1,33 +1,46 @@
 ################################################################################
 # Cluster
 ################################################################################
+# クラスター定義
 resource "aws_ecs_cluster" "main" {
-  name = local.name
+  name = "${local.service_group}-${local.name}-${var.environment}"
 }
 
 ################################################################################
 # ECS Service
 ################################################################################
+# ECSサービス定義
 resource "aws_ecs_service" "main" {
-  name            = local.name
+  name = "${local.service_group}-${local.name}-${var.environment}"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.main.arn
   desired_count   = 1
   launch_type     = "FARGATE"
   network_configuration {
-    subnets          = data.aws_subnets.public.ids
+    subnets          = data.aws_subnets.private.ids
     security_groups  = [aws_security_group.main.id]
-    assign_public_ip = true
+    assign_public_ip = false
   }
   load_balancer {
     target_group_arn = aws_lb_target_group.main.arn
     container_name   = aws_ecr_repository.main.name
     container_port   = var.container_port
   }
+
+  dynamic "load_balancer" {
+    for_each = var.environment == "dev" ? [true] : []
+    content {
+      target_group_arn = aws_lb_target_group.debug[0].arn
+      container_name   = aws_ecr_repository.main.name
+      container_port   = var.container_port
+    }
+  }
+
 }
 
+# ECSタスク定義
 resource "aws_ecs_task_definition" "main" {
-  family                   = local.name
+  family                   = "${local.service_group}-${local.name}-${var.environment}"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = 512
@@ -55,7 +68,7 @@ resource "aws_ecs_task_definition" "main" {
           logDriver = "awslogs",
           options = {
             awslogs-region        = var.region
-            awslogs-stream-prefix = local.name
+            awslogs-stream-prefix = "${local.service_group}-${local.name}-${var.environment}"
             awslogs-group         = aws_cloudwatch_log_group.main.name
           }
         }

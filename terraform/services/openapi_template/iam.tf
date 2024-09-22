@@ -1,8 +1,9 @@
 ################################################################################
 # Role
 ################################################################################
+# ECS用タスク実行ロール
 resource "aws_iam_role" "ecs_task_execution" {
-  name = "ECSTaskExecutionRole-${local.name}"
+  name = "${local.service_group}-${local.name}-ECSTaskExecutionRole-${var.environment}"
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
     { principal = "ecs-tasks.amazonaws.com" }
@@ -13,8 +14,9 @@ resource "aws_iam_role" "ecs_task_execution" {
   ]
 }
 
+# ECS用タスクロール
 resource "aws_iam_role" "ecs_task" {
-  name = "ECSTaskRole-${local.name}"
+  name = "${local.service_group}-${local.name}-ECSTaskRole-${var.environment}"
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
     { principal = "ecs-tasks.amazonaws.com" }
@@ -24,8 +26,9 @@ resource "aws_iam_role" "ecs_task" {
   ]
 }
 
+# Codebuild用タスクロール
 resource "aws_iam_role" "codebuild" {
-  name = "CodeBuildRole-${local.name}"
+  name = "${local.service_group}-${local.name}-CodeBuildRole-${var.environment}"
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
     { principal = "codebuild.amazonaws.com" }
@@ -35,11 +38,24 @@ resource "aws_iam_role" "codebuild" {
   ]
 }
 
+# APIGateway用Role
+resource "aws_iam_role" "api_gateway" {
+  name = "RestAPIGateway"
+  assume_role_policy = templatefile(
+    "${path.module}/assets/templates/assume_role_policy.tpl",
+    { principal = "apigateway.amazonaws.com" }
+  )
+  managed_policy_arns = [
+    "arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+  ]
+}
+
 ################################################################################
 # Policy
 ################################################################################
+# ECS用サービス実行ポリシー
 resource "aws_iam_policy" "ecs_service_role" {
-  name = "ECSServiceRolePolicy-${local.name}"
+  name = "${local.service_group}-${local.name}-ECSServiceRolePolicy-${var.environment}"
 
   policy = jsonencode(
     {
@@ -248,8 +264,9 @@ resource "aws_iam_policy" "ecs_service_role" {
   )
 }
 
+# Codebuild用ビルド実行ポリシー
 resource "aws_iam_policy" "codebuild_role" {
-  name = "CodebuildRole-${local.name}"
+  name = "${local.service_group}-${local.name}-CodebuildRole-${local.name}"
   policy = jsonencode(
     {
       "Version" = "2012-10-17",
@@ -262,6 +279,29 @@ resource "aws_iam_policy" "codebuild_role" {
           ],
           "Resource" : "*"
         },
+      ]
+    }
+  )
+}
+
+# APIGatewayLogging用ポリシー
+resource "aws_iam_role_policy" "api_gateway_log_policy" {
+  name = "APIGatewayLogPolicy"
+  role = aws_iam_role.api_gateway.id
+
+  policy = jsonencode(
+    {
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Effect = "Allow"
+          Action = [
+            "logs:CreateLogGroup",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents"
+          ]
+          Resource = aws_cloudwatch_log_group.api_gateway.arn
+        }
       ]
     }
   )

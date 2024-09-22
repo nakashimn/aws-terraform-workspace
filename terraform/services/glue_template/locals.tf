@@ -1,8 +1,6 @@
 ################################################################################
-# Logger
+# LocalParams
 ################################################################################
-# ECSサービス用Logger定義
-resource "aws_cloudwatch_log_group" "main" {
-  name              = local.name
-  retention_in_days = 30
+locals {
+  name            = "glue"
 }

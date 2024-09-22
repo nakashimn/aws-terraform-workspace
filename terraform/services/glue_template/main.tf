@@ -5,16 +5,14 @@ terraform {
   backend "s3" {
     bucket  = "nakashimn"
     region  = "ap-northeast-3"
-    key     = "tfstate/openapi_sample.tfstate"
+    key     = "tfstate/glue.tfstate"
     encrypt = true
   }
 }
 
 provider "aws" {
-  region                   = var.region
-  shared_config_files      = ["~/.aws/config"]
-  shared_credentials_files = ["~/.aws/credentials"]
-  profile                  = "terraform"
+  region  = var.region
+  profile = "terraform"
 }
 
 ################################################################################
@@ -25,8 +23,8 @@ data "aws_availability_zones" "available" {}
 
 data "aws_vpc" "root" {
   filter {
-    name   = "tag:Name"
-    values = ["${local.service_group}-vpc-${var.environment}"]
+    name   = "tag:name"
+    values = ["terraform"]
   }
 }
 
@@ -51,6 +49,3 @@ data "aws_subnets" "private" {
     values = [false]
   }
 }
-
-
-data "aws_api_gateway_rest_api" "main" { name = "${local.service_group}-api-gateway-${var.environment}" }

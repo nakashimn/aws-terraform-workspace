@@ -1,8 +1,9 @@
 ################################################################################
 # CodeBuild
 ################################################################################
+# Codebuildプロジェクト定義
 resource "aws_codebuild_project" "main" {
-  name          = "codebuild-${local.name}"
+  name          = "${local.service_group}-${local.name}-codebuild-${var.environment}"
   service_role  = aws_iam_role.codebuild.arn
   build_timeout = 60
 
@@ -12,7 +13,7 @@ resource "aws_codebuild_project" "main" {
     type                        = "LINUX_CONTAINER"
     image_pull_credentials_type = "CODEBUILD"
     environment_variable {
-      name  = "BITBUCKET_AUTHORIZATION_TOKEN"
+      name  = "BITBUCKET_OAUTH_TOKEN"
       value = aws_codebuild_source_credential.main.token
     }
   }
@@ -42,12 +43,14 @@ resource "aws_codebuild_project" "main" {
   }
 }
 
+# Bitbucketのアクセス認証定義
 resource "aws_codebuild_source_credential" "main" {
   auth_type   = "PERSONAL_ACCESS_TOKEN"
   server_type = "BITBUCKET"
   token       = var.bitbucket_access_token
 }
 
+# CodebuildWebhook定義
 resource "aws_codebuild_webhook" "main" {
   project_name = aws_codebuild_project.main.name
   build_type   = "BUILD"

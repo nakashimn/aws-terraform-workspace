@@ -11,14 +11,18 @@ terraform {
 }
 
 provider "aws" {
-  region  = var.region
-  profile = "terraform"
+  region                   = var.region
+  shared_config_files      = ["~/.aws/config"]
+  shared_credentials_files = ["~/.aws/credentials"]
+  profile                  = "terraform"
 }
 
 provider "aws" {
-  alias   = "as_global"
-  region  = "us-east-1"
-  profile = "terraform"
+  alias                    = "as_global"
+  region                   = "us-east-1"
+  shared_config_files      = ["~/.aws/config"]
+  shared_credentials_files = ["~/.aws/credentials"]
+  profile                  = "terraform"
 }
 
 # AWSの情報

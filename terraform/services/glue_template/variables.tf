@@ -1,8 +1,5 @@
 ################################################################################
-# Logger
+# Params
 ################################################################################
-# ECSサービス用Logger定義
-resource "aws_cloudwatch_log_group" "main" {
-  name              = local.name
-  retention_in_days = 30
-}
+variable "environment" { description = "環境(dev/stg/pro)" }
+variable "region" { description = "利用するリージョン" }
