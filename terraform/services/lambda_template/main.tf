@@ -5,7 +5,7 @@ terraform {
   backend "s3" {
     bucket  = "nakashimn"
     region  = "ap-northeast-3"
-    key     = "tfstate/ecs_batch_template.tfstate"
+    key     = "tfstate/lambda_template.tfstate"
     encrypt = true
   }
 }
