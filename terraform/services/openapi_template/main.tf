@@ -54,3 +54,4 @@ data "aws_subnets" "private" {
 
 
 data "aws_api_gateway_rest_api" "main" { name = "${local.service_group}-api-gateway-${var.environment}" }
+data "aws_s3_bucket" "documents" { bucket = "${local.service_group}-documents-${var.environment}" }

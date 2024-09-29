@@ -1,0 +1,20 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${account_id}.dkr.ecr.${region}.amazonaws.com
+
+  build:
+    commands:
+      - docker build --target prod -t ${repository_url}:${image_tag} .
+      - docker-compose --profile doc up --build
+      - docker-compose --profile test up --build
+      - cp -r ./docs documents
+      - docker push ${repository_url}:${image_tag}
+      - aws ecs update-service --force-new-deployment --service ${ecs_service} --cluster ${cluster_name}
+
+artifacts:
+  files:
+    - "**/*"
+  base-directory: documents

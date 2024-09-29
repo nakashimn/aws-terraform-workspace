@@ -2,6 +2,8 @@
 # Params
 ################################################################################
 variable "acceptable_method" { description = "受け付けるHTTPリクエストメソッドのリスト" }
+variable "app_version" { description = "アプリのバージョン" }
+variable "build_branch" { description = "ビルド対象ブランチ名" }
 variable "container_port" { description = "コンテナの開放ポート" }
 variable "countory" { description = "国名" }
 variable "environment" { description = "環境(dev/stg/pro)" }

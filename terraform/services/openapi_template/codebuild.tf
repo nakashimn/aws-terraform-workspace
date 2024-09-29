@@ -20,12 +20,13 @@ resource "aws_codebuild_project" "main" {
   }
 
   source {
-    buildspec = templatefile("${path.module}/buildspec/buildspec.yaml", {
+    buildspec = templatefile("${path.module}/buildspec/${var.environment}.yaml", {
       account_id      = data.aws_caller_identity.current.id
+      cluster_name    = aws_ecs_cluster.main.name
+      ecs_service     = aws_ecs_service.main.name
+      image_tag       = var.environment == "pro" ? var.app_version : var.build_branch
       region          = var.region
-      repository_name = aws_ecr_repository.main.name
       repository_url  = aws_ecr_repository.main.repository_url
-      version         = local.version
     })
     type                = "BITBUCKET"
     location            = local.bitbucket_repository_url
@@ -38,7 +39,9 @@ resource "aws_codebuild_project" "main" {
   }
 
   artifacts {
-    type = "NO_ARTIFACTS"
+    type                = "S3"
+    location            = data.aws_s3_bucket.documents.bucket
+    encryption_disabled = true
   }
 }
 

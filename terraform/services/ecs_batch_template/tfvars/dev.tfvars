@@ -1,7 +1,7 @@
 # サービスグループ定義
 vendor    = "nakashimn"
 countory  = "jp"
-service   = "py_template"
+service   = "templates"
 
 # 環境設定
 environment    = "dev"

@@ -275,7 +275,11 @@ resource "aws_iam_policy" "codebuild_role" {
           "Effect" = "Allow",
           "Action" = [
             "ecr:*",
-            "logs:*"
+            "ecs:*",
+            "logs:*",
+            "codebuild:*",
+            "s3:PutObject",
+            "s3:Get*"
           ],
           "Resource" : "*"
         },

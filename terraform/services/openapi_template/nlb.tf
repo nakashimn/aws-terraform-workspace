@@ -54,7 +54,7 @@ resource "aws_lb" "debug" {
 resource "aws_lb_target_group" "debug" {
   count = var.environment == "dev" ? 1 : 0
 
-  name        = aws_lb.debug.name
+  name        = aws_lb.debug[0].name
   target_type = "ip"
   vpc_id      = data.aws_vpc.root.id
   port        = var.container_port

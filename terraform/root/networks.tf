@@ -3,7 +3,8 @@
 ################################################################################
 # VPC定義
 resource "aws_vpc" "main" {
-  cidr_block = var.vpc_cidr
+  cidr_block           = var.vpc_cidr
+  enable_dns_hostnames = true
 
   tags = {
     Name = "${local.service_group}-vpc-${var.environment}"
@@ -128,4 +129,49 @@ resource "aws_eip" "nat_gateway" {
   tags = {
     Name = "${local.service_group}-elastic-ip-${var.environment}-${count.index}"
   }
+}
+
+################################################################################
+# PrivateLink
+################################################################################
+resource "aws_vpc_endpoint" "ecr_dkr" {
+  count = var.resource_toggles.enable_nat_gateway ? 0 : 1
+
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${var.region}.ecr.dkr"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.private_link.id]
+  private_dns_enabled = true
+}
+
+resource "aws_vpc_endpoint" "ecr_api" {
+  count = var.resource_toggles.enable_nat_gateway ? 0 : 1
+
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${var.region}.ecr.api"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.private_link.id]
+  private_dns_enabled = true
+}
+
+resource "aws_vpc_endpoint" "logs" {
+  count = var.resource_toggles.enable_nat_gateway ? 0 : 1
+
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${var.region}.logs"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.private_link.id]
+  private_dns_enabled = true
+}
+
+resource "aws_vpc_endpoint" "s3" {
+  count = var.resource_toggles.enable_nat_gateway ? 0 : 1
+
+  service_name      = "com.amazonaws.${var.region}.s3"
+  vpc_endpoint_type = "Gateway"
+  vpc_id            = aws_vpc.main.id
+  route_table_ids = aws_route_table.private[*].id
 }

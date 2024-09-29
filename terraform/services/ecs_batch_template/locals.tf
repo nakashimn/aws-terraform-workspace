@@ -5,7 +5,7 @@ locals {
   # サービスグループ名
   service_group            = "${var.vendor}-${var.countory}-${var.service}"
   # コンポーネント名称
-  name                     = "ecs-dev-py-template"
+  name                     = "ecs-batch"
   # ECR設定
   repository_name          = "ecs_dev_py_template"
   # Bitbucket設定
