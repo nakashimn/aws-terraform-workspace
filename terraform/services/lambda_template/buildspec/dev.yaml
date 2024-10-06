@@ -8,7 +8,12 @@ phases:
   build:
     commands:
       - docker build --target prod -t ${repository_url}:${image_tag} .
+
+  post_build:
+    commands:
       - docker push ${repository_url}:${image_tag}
+      - aws lambda update-function-code --function-name ${function_name} --image-uri ${repository_url}:${image_tag}
+      - cp -r ./docs documents
 
 artifacts:
   files:

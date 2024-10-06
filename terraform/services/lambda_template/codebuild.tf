@@ -22,6 +22,7 @@ resource "aws_codebuild_project" "main" {
   source {
     buildspec = templatefile("${path.module}/buildspec/${var.environment}.yaml", {
       account_id      = data.aws_caller_identity.current.id
+      function_name   = aws_lambda_function.codebuild_notification.function_name
       image_tag       = var.environment == "pro" ? var.app_version : var.build_branch
       region          = var.region
       repository_url  = aws_ecr_repository.main.repository_url
@@ -62,4 +63,32 @@ resource "aws_codebuild_webhook" "main" {
       pattern = "develop"
     }
   }
+}
+
+# EventBridgeルール定義
+resource "aws_cloudwatch_event_rule" "codebuild_notification" {
+  name        = "${aws_codebuild_project.main.name}-${var.environment}"
+  event_pattern = jsonencode(
+    {
+      "source": ["aws.codebuild"],
+      "detail-type": ["CodeBuild Build State Change"],
+      "detail": {
+        "project-name": ["${aws_codebuild_project.main.name}"],
+        "build-status": [
+          "IN_PROGRESS",
+          "SUCCEEDED",
+          "FAILED"
+        ]
+      }
+    }
+  )
+}
+
+# EventBridgeのターゲット定義
+resource "aws_cloudwatch_event_target" "codebuild_notification" {
+  rule      = aws_cloudwatch_event_rule.codebuild_notification.name
+  target_id = "lambda"
+  arn       = aws_lambda_function.codebuild_notification.arn
+
+  depends_on = [ aws_lambda_function.codebuild_notification ]
 }
