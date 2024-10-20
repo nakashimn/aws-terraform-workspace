@@ -25,17 +25,6 @@ resource "aws_iam_role" "lambda" {
   ]
 }
 
-# EventBridge用ロール
-resource "aws_iam_role" "eventbridge_scheduler" {
-  name = "${local.service_group}-${local.name}-EventbridgeSchedulerRole-${var.environment}"
-  assume_role_policy = templatefile(
-    "${path.module}/assets/templates/assume_role_policy.tpl",
-    { principal = "events.amazonaws.com" }
-  )
-  managed_policy_arns = [
-    "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceEventsRole"
-  ]
-}
 
 ################################################################################
 # Policy

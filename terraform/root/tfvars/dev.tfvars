@@ -17,5 +17,6 @@ open_ports  = [
 ]
 
 resource_toggles = {
-  enable_nat_gateway = false
+  enable_nat_gateway  = false
+  enable_vpc_endpoint = false
 }

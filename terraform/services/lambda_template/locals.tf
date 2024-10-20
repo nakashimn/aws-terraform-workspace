@@ -7,8 +7,8 @@ locals {
   # コンポーネント名称
   name                     = "lambda"
   # ECR設定
-  repository_name          = "lambda_ts_template"
+  repository_name          = "lambda-py-template"
   # Github設定
-  github_repository_url    = "https://github.com/nakashimn/lambda_template.git"
+  github_repository_url    = "https://github.com/nakashimn/lambda-py-template.git"
   version                  = "develop"
 }

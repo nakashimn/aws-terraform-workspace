@@ -28,3 +28,15 @@ provider "aws" {
 # AWSの情報
 data "aws_caller_identity" "current" {}
 data "aws_availability_zones" "available" {}
+
+########################################################################################
+# Modules
+########################################################################################
+# codebuild-notificationリポジトリ
+module "codebuild-notirifation-webhook" {
+  source = "../modules/codebuild-notification-webhook-repo"
+
+  image_tag       = "latest"
+  region          = var.region
+  repository_name = "codebuild-notification-webhook"
+}

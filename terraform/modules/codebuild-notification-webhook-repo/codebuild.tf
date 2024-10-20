@@ -1,10 +1,11 @@
 ################################################################################
 # CodeBuild
 ################################################################################
+# CodeBuildプロジェクト
 resource "aws_codebuild_project" "main" {
-  name           = "${local.service_group}-${local.name}-codebuild-${var.environment}"
+  name           = var.repository_name
   service_role   = aws_iam_role.codebuild.arn
-  source_version = "develop"
+  source_version = "main"
   build_timeout  = 60
 
   environment {
@@ -20,15 +21,14 @@ resource "aws_codebuild_project" "main" {
   }
 
   source {
-    buildspec = templatefile("${path.module}/buildspec/${var.environment}.yaml", {
+    buildspec = templatefile("${path.module}/buildspec/buildspec.yaml", {
       account_id      = data.aws_caller_identity.current.id
-      function_name   = ""
-      image_tag       = var.environment == "pro" ? var.app_version : var.build_branch
+      image_tag       = var.image_tag
       region          = var.region
       repository_url  = aws_ecr_repository.main.repository_url
     })
     type                = "GITHUB"
-    location            = local.github_repository_url
+    location            = "https://github.com/nakashimn/codebuild-notification-webhook.git"
     git_clone_depth     = 1
     report_build_status = false
   }
@@ -38,18 +38,18 @@ resource "aws_codebuild_project" "main" {
   }
 
   artifacts {
-    type = "S3"
-    location = data.aws_s3_bucket.documents.bucket
-    encryption_disabled = true
+    type = "NO_ARTIFACTS"
   }
 }
 
+# リポジトリのクレデンシャル情報
 resource "aws_codebuild_source_credential" "main" {
   auth_type   = "PERSONAL_ACCESS_TOKEN"
   server_type = "GITHUB"
   token       = var.github_access_token
 }
 
+# CodeBuildのWebhookトリガー定義
 resource "aws_codebuild_webhook" "main" {
   project_name = aws_codebuild_project.main.name
   build_type   = "BUILD"
@@ -60,7 +60,17 @@ resource "aws_codebuild_webhook" "main" {
     }
     filter {
       type    = "HEAD_REF"
-      pattern = "develop"
+      pattern = "main"
     }
   }
+}
+
+# CodeBuild実行
+resource "null_resource" "start_codebuild" {
+  provisioner "local-exec" {
+    command = "aws codebuild start-build --project-name ${aws_codebuild_project.main.name}"
+  }
+
+  # CodeBuildプロジェクト作成後に実行するよう依存関係を設定
+  depends_on = [aws_codebuild_project.main]
 }

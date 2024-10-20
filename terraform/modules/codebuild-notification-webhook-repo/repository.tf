@@ -3,8 +3,9 @@
 ################################################################################
 # ECRリポジトリ定義
 resource "aws_ecr_repository" "main" {
-  name                 = local.repository_name
+  name                 = var.repository_name
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
   image_scanning_configuration {
     scan_on_push = true
   }

@@ -135,7 +135,7 @@ resource "aws_eip" "nat_gateway" {
 # PrivateLink
 ################################################################################
 resource "aws_vpc_endpoint" "ecr_dkr" {
-  count = var.resource_toggles.enable_nat_gateway ? 0 : 1
+  count = var.resource_toggles.enable_vpc_endpoint ? 1 : 0
 
   vpc_id              = aws_vpc.main.id
   service_name        = "com.amazonaws.${var.region}.ecr.dkr"
@@ -146,7 +146,7 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
 }
 
 resource "aws_vpc_endpoint" "ecr_api" {
-  count = var.resource_toggles.enable_nat_gateway ? 0 : 1
+  count = var.resource_toggles.enable_vpc_endpoint ? 1 : 0
 
   vpc_id              = aws_vpc.main.id
   service_name        = "com.amazonaws.${var.region}.ecr.api"
@@ -157,7 +157,7 @@ resource "aws_vpc_endpoint" "ecr_api" {
 }
 
 resource "aws_vpc_endpoint" "logs" {
-  count = var.resource_toggles.enable_nat_gateway ? 0 : 1
+  count = var.resource_toggles.enable_vpc_endpoint ? 1 : 0
 
   vpc_id              = aws_vpc.main.id
   service_name        = "com.amazonaws.${var.region}.logs"
@@ -168,7 +168,7 @@ resource "aws_vpc_endpoint" "logs" {
 }
 
 resource "aws_vpc_endpoint" "s3" {
-  count = var.resource_toggles.enable_nat_gateway ? 0 : 1
+  count = var.resource_toggles.enable_vpc_endpoint ? 1 : 0
 
   service_name      = "com.amazonaws.${var.region}.s3"
   vpc_endpoint_type = "Gateway"

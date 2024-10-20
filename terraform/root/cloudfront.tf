@@ -86,7 +86,7 @@ resource "aws_wafv2_web_acl" "documents" {
   }
 }
 
-# CloudFrontアクセスこのトロールのIPリスト
+# CloudFrontアクセスコントロールのIPリスト
 resource "aws_wafv2_ip_set" "local" {
   provider           = aws.as_global
   name               = "local-ip"
