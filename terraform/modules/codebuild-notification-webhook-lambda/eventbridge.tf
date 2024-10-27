@@ -3,7 +3,9 @@
 ########################################################################################
 # EventBridgeルール定義
 resource "aws_cloudwatch_event_rule" "codebuild_notification" {
-  name        = "codebuild-notification-${substr(var.codebuild_project_name, 0 , 41)}"
+  name        = substr("codebuild-notification${random_id.main.b64_url}-${var.codebuild_project_name}", 0, 64)
+  description = "Build notification for ${var.codebuild_project_name}."
+
   event_pattern = jsonencode(
     {
       "source": ["aws.codebuild"],

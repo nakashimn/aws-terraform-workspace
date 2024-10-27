@@ -264,7 +264,7 @@ resource "aws_iam_policy" "ecs_service_role" {
 }
 
 resource "aws_iam_policy" "codebuild_role" {
-  name = "${local.service_group}-${local.name}-CodebuildRole-${local.name}"
+  name = "${local.service_group}-${local.name}-CodebuildRole-${var.environment}"
   policy = jsonencode(
     {
       "Version" = "2012-10-17",

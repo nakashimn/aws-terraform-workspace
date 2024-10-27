@@ -3,7 +3,7 @@
 ################################################################################
 # Lambda用ロール
 resource "aws_iam_role" "lambda" {
-  name               = "LambdaRole-build-notification-${substr(var.codebuild_project_name, 0, 34)}"
+  name               = substr("Lambda-build-notification${random_id.main.b64_url}-${var.codebuild_project_name}", 0, 64)
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
     { principal = "lambda.amazonaws.com" }
@@ -15,7 +15,7 @@ resource "aws_iam_role" "lambda" {
 
 # EventBridge用ロール
 resource "aws_iam_role" "eventbridge_scheduler" {
-  name = "EventbridgeRole-build-notification-${substr(var.codebuild_project_name, 0, 28)}"
+  name = substr("Eventbridge-build-notification${random_id.main.b64_url}-${var.codebuild_project_name}", 0, 64)
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
     { principal = "events.amazonaws.com" }
@@ -30,7 +30,7 @@ resource "aws_iam_role" "eventbridge_scheduler" {
 ################################################################################
 # Lambda用ポリシー
 resource "aws_iam_policy" "lambda" {
-  name = "LambdaPolicy-build-notification-${substr(var.codebuild_project_name, 0, 32)}"
+  name = substr("Lambda-build-notification-${random_id.main.b64_url}-${var.codebuild_project_name}", 0, 64)
   policy = jsonencode(
     {
       "Version" = "2012-10-17",

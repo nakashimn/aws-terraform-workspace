@@ -2,19 +2,26 @@ version: 0.2
 
 phases:
   pre_build:
+    on-failure: ABORT
     commands:
-      - aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${account_id}.dkr.ecr.${region}.amazonaws.com
+      - docker login --username "${docker_username}" --password "${docker_password}"
+      - export BUILD_TIMESTAMP=$(date '+%Y%m%d_%H%M')
 
   build:
+    on-failure: ABORT
     commands:
       - docker build --target prod -t ${repository_url}:${image_tag} .
-      - docker-compose --profile doc up --build
-      - docker-compose --profile test up --build
-      - cp -r ./docs documents
+      - docker-compose run doc
+      - docker-compose run test
+
+  post_build:
+    on-failure: ABORT
+    commands:
+      - aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${account_id}.dkr.ecr.${region}.amazonaws.com
+      - aws s3 cp ./docs s3://${bucket_name}/${ecs_service} --recursive
+      - aws s3 cp ./docs/jest-report/ s3://${bucket_name}/${ecs_service}/jest-report-history/jest-report-$BUILD_TIMESTAMPZ/ --recursive
       - docker push ${repository_url}:${image_tag}
-      - aws ecs update-service --force-new-deployment --service ${ecs_service} --cluster ${cluster_name}
 
 artifacts:
   files:
     - "**/*"
-  base-directory: documents

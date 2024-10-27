@@ -68,7 +68,7 @@ resource "aws_codebuild_webhook" "main" {
 # CodeBuild実行
 resource "null_resource" "start_codebuild" {
   provisioner "local-exec" {
-    command = "aws codebuild start-build --project-name ${aws_codebuild_project.main.name}"
+    command = "aws codebuild start-build --project-name ${aws_codebuild_project.main.name} --region ${var.region}"
   }
 
   # CodeBuildプロジェクト作成後に実行するよう依存関係を設定

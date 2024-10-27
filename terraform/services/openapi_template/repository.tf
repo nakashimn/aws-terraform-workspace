@@ -9,3 +9,12 @@ resource "aws_ecr_repository" "main" {
     scan_on_push = true
   }
 }
+
+# ECRライフサイクルポリシー
+resource "aws_ecr_lifecycle_policy" "main" {
+  repository = aws_ecr_repository.main.name
+  policy     = templatefile(
+    "${path.module}/assets/templates/ecr_lifecycle_policy.tpl",
+    {period_days = 14}
+  )
+}

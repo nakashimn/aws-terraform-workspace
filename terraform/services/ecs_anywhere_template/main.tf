@@ -2,12 +2,7 @@
 # Settings
 ################################################################################
 terraform {
-  backend "s3" {
-    bucket  = "nakashimn"
-    region  = "ap-northeast-3"
-    key     = "tfstate/ecs_anywhere_template.tfstate"
-    encrypt = true
-  }
+  backend "s3" {}
 }
 
 provider "aws" {

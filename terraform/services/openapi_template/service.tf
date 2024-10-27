@@ -21,6 +21,9 @@ resource "aws_ecs_service" "main" {
     security_groups  = [aws_security_group.main.id]
     assign_public_ip = false
   }
+  deployment_controller {
+    type = "CODE_DEPLOY"
+  }
   load_balancer {
     target_group_arn = aws_lb_target_group.main.arn
     container_name   = aws_ecr_repository.main.name
@@ -35,7 +38,6 @@ resource "aws_ecs_service" "main" {
       container_port   = var.container_port
     }
   }
-
 }
 
 # タスク定義

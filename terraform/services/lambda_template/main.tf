@@ -2,12 +2,7 @@
 # Settings
 ################################################################################
 terraform {
-  backend "s3" {
-    bucket  = "nakashimn"
-    region  = "ap-northeast-3"
-    key     = "tfstate/lambda_template.tfstate"
-    encrypt = true
-  }
+  backend "s3" {}
 }
 
 provider "aws" {
@@ -59,6 +54,7 @@ data "aws_subnets" "private" {
 
 data "aws_s3_bucket" "documents" { bucket = "${local.service_group}-documents-${var.environment}" }
 data "aws_ecr_repository" "codebuild_notification" { name = "codebuild-notification-webhook" }
+data "aws_ssm_parameter" "build_notification" { name = "/webhook/slack-codebuild" }
 
 ########################################################################################
 # Modules
@@ -69,6 +65,5 @@ module "codebuild_notification" {
 
   codebuild_notification_repo_url = data.aws_ecr_repository.codebuild_notification.repository_url
   codebuild_project_name          = aws_codebuild_project.main.name
-  region                          = var.region
-  webhook_url                     = "https://hooks.slack.com/services/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"
+  webhook_url                     = data.aws_ssm_parameter.build_notification.value
 }

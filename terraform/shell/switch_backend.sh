@@ -37,8 +37,7 @@ if [ -z $environment ]; then
 fi
 
 # path
-SCRIPT_DIR=$(cd $(dirname $0); pwd)
-CONFIG_DIR="$(dirname $SCRIPT_DIR)/terraform_conf"
+CONFIG_DIR="$(pwd)/terraform_conf"
 
 # switch backend
 terraform init -reconfigure -backend-config "${CONFIG_DIR}/${environment}.conf"

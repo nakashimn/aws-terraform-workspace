@@ -2,12 +2,7 @@
 # Settings
 ################################################################################
 terraform {
-  backend "s3" {
-    bucket  = "nakashimn"
-    region  = "ap-northeast-3"
-    key     = "tfstate/glue.tfstate"
-    encrypt = true
-  }
+  backend "s3" {}
 }
 
 provider "aws" {

@@ -2,12 +2,7 @@
 # Settings
 ################################################################################
 terraform {
-  backend "s3" {
-    bucket  = "nakashimn"
-    region  = "ap-northeast-3"
-    key     = "tfstate/develop.tfstate"
-    encrypt = true
-  }
+  backend "s3" {}
 }
 
 provider "aws" {
@@ -33,7 +28,7 @@ data "aws_availability_zones" "available" {}
 # Modules
 ########################################################################################
 # codebuild-notificationリポジトリ
-module "codebuild-notirifation-webhook" {
+module "codebuild_notification" {
   source = "../modules/codebuild-notification-webhook-repo"
 
   image_tag       = "latest"

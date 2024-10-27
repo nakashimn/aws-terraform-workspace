@@ -3,7 +3,7 @@
 ################################################################################
 locals {
   # サービスグループの名称
-  service_group = "${var.vendor}-${var.countory}-${var.service}"
+  service_group = "${var.vendor}-${var.region}-${var.service}"
 
   # AWSアベイラビリティゾーンの情報
   availability_zones = [

@@ -3,8 +3,8 @@
 ################################################################################
 terraform {
   backend "s3" {
-    bucket  = "nakashimn"
-    region  = "ap-northeast-3"
+    bucket  = "nakashimn-tfstate"
+    region  = "ap-northeast-1"
     key     = "tfstate/sagemaker_template.tfstate"
     encrypt = true
   }

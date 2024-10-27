@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
+      args:
+        PLURALITH_API_KEY: ${PLURALITH_API_KEY}
+        PLURALITH_VERSION: ${PLURALITH_VERSION}
     container_name: terraform_workspace
     hostname: terraform_workspace
     shm_size: '1gb'

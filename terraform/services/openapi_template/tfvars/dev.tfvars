@@ -5,8 +5,8 @@ service   = "templates"
 
 # 環境設定
 environment    = "dev"
-region         = "ap-northeast-3"
-vpc_cidr       = "10.186.32.0/20"
+region         = "ap-northeast-1"
+vpc_cidr       = "172.16.0.0/16"
 
 # アプリケーション設定
 app_version       = "develop"
@@ -17,3 +17,9 @@ acceptable_method = [
 ]
 container_port = 3000
 open_port      = 80
+
+allowed_ip_addresses = [
+  "59.132.67.108/32"
+]
+
+endpoint_domain = "nakashimn.click"

@@ -3,7 +3,7 @@
 ################################################################################
 locals {
   # サービスグループ名
-  service_group            = "${var.vendor}-${var.countory}-${var.service}"
+  service_group            = "${var.vendor}-${var.region}-${var.service}"
   # コンポーネント名称
   name                     = "glue"
 }

@@ -2,12 +2,7 @@
 # Settings
 ################################################################################
 terraform {
-  backend "s3" {
-    bucket  = "nakashimn"
-    region  = "ap-northeast-3"
-    key     = "tfstate/openapi_sample.tfstate"
-    encrypt = true
-  }
+  backend "s3" {}
 }
 
 provider "aws" {
@@ -54,4 +49,29 @@ data "aws_subnets" "private" {
 
 
 data "aws_api_gateway_rest_api" "main" { name = "${local.service_group}-api-gateway-${var.environment}" }
+data "aws_api_gateway_domain_name" "main" { domain_name = "api.${var.endpoint_domain}" }
 data "aws_s3_bucket" "documents" { bucket = "${local.service_group}-documents-${var.environment}" }
+data "aws_route53_zone" "main" { name = "api.${var.endpoint_domain}" }
+data "aws_route53_zone" "private" {
+  name = "api.${var.endpoint_domain}.private"
+  private_zone = true
+}
+data "aws_ecr_repository" "codebuild_notification" { name = "codebuild-notification-webhook" }
+data "aws_ecr_pull_through_cache_rule" "ecr_public" { ecr_repository_prefix = "ecr-public-${var.environment}" }
+data "aws_ssm_parameter" "docker_username" { name = "/dockerhub/username" }
+data "aws_ssm_parameter" "docker_password" { name = "/dockerhub/password" }
+data "aws_ssm_parameter" "main" { name = "/bitbucket-access-token/openapi_sample" }
+data "aws_ssm_parameter" "build_notification" { name = "/webhook/slack-codebuild" }
+
+########################################################################################
+# Modules
+########################################################################################
+# codebuild-notificationモジュール
+module "codebuild_notification" {
+  source = "../../modules/codebuild-notification-webhook-lambda"
+
+  codebuild_notification_repo_url = data.aws_ecr_repository.codebuild_notification.repository_url
+  codebuild_project_name          = aws_codebuild_project.main.name
+  random_id_length                = 2
+  webhook_url                     = data.aws_ssm_parameter.build_notification.value
+}

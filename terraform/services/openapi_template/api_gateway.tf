@@ -69,30 +69,15 @@ resource "aws_api_gateway_stage" "main" {
   }
 }
 
-# Logging用Role紐づけ
-resource "aws_api_gateway_account" "api_gateway_account" {
-  cloudwatch_role_arn = aws_iam_role.api_gateway.arn
-}
-
 # APIGateway用Logger定義
 resource "aws_cloudwatch_log_group" "api_gateway" {
   name = "/${local.service_group}-api-gateway-${var.environment}/"
-}
-
-# APIGateway用カスタムドメイン定義
-resource "aws_api_gateway_domain_name" "main" {
-  domain_name              = aws_route53_zone.main.name
-  regional_certificate_arn = aws_acm_certificate_validation.main.certificate_arn
-
-  endpoint_configuration {
-    types = ["REGIONAL"]
-  }
 }
 
 # APIGatewayとカスタムドメインの紐づけ
 resource "aws_api_gateway_base_path_mapping" "main" {
   api_id      = data.aws_api_gateway_rest_api.main.id
   stage_name  = aws_api_gateway_stage.main.stage_name
-  domain_name = aws_api_gateway_domain_name.main.domain_name
+  domain_name = data.aws_api_gateway_domain_name.main.domain_name
   base_path   = "api"
 }

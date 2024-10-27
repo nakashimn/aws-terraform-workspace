@@ -48,7 +48,7 @@ resource "aws_codebuild_project" "main" {
 resource "aws_codebuild_source_credential" "main" {
   auth_type   = "PERSONAL_ACCESS_TOKEN"
   server_type = "BITBUCKET"
-  token       = var.bitbucket_access_token
+  token       = data.aws_ssm_parameter.main.value
 }
 
 resource "aws_codebuild_webhook" "main" {

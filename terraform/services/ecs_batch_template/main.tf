@@ -2,12 +2,7 @@
 # Settings
 ################################################################################
 terraform {
-  backend "s3" {
-    bucket  = "nakashimn"
-    region  = "ap-northeast-3"
-    key     = "tfstate/ecs_batch_template.tfstate"
-    encrypt = true
-  }
+  backend "s3" {}
 }
 
 provider "aws" {
@@ -58,3 +53,5 @@ data "aws_subnets" "private" {
 }
 
 data "aws_s3_bucket" "documents" { bucket = "${local.service_group}-documents-${var.environment}" }
+data "aws_ssm_parameter" "main" { name = "/bitbucket-access-token/ecs_dev_py_template" }
+data "aws_ssm_parameter" "build_notification" { name = "/webhook/slack-codebuild" }
