@@ -14,6 +14,7 @@ variable "open_port" {
   description = "NLBが受け付けるポート"
 }
 variable "region" { description = "利用するリージョン" }
+variable "resource_toggles" { description = "Resourceの有効/無効切替用変数" }
 variable "service" { description = "サービス名" }
 variable "vendor" { description = "ベンダー名" }
 variable "vpc_cidr" { description = "VPCのCIDRブロック" }

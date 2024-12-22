@@ -22,8 +22,8 @@ resource "aws_codepipeline" "main" {
       output_artifacts = ["source_output"]
 
       configuration = {
-        ConnectionArn    = aws_codestarconnections_connection.main.arn
-        FullRepositoryId = local.bitbucket_repository_name
+        ConnectionArn    = aws_codestarconnections_connection.gitlab.arn
+        FullRepositoryId = local.gitlab_repository_name
         BranchName       = var.build_branch
       }
     }
@@ -57,8 +57,8 @@ resource "aws_codepipeline" "main" {
       version          = "1"
 
       configuration = {
-        ClusterName = aws_ecs_cluster.main.name
-        ServiceName = aws_ecs_service.main.name
+        ApplicationName     = aws_codedeploy_app.main.name
+        DeploymentGroupName = aws_codedeploy_deployment_group.main.deployment_group_name
       }
     }
   }
@@ -67,10 +67,16 @@ resource "aws_codepipeline" "main" {
 ################################################################################
 # CodeConnection
 ################################################################################
+# CodeConnection定義(bitbucket)
+resource "aws_codestarconnections_connection" "bitbucket" {
+  name          = "connect-bitbucket-${var.environment}"
+  provider_type = "Bitbucket"
+}
+
 # CodeConnection定義
-resource "aws_codestarconnections_connection" "main" {
-  name                    = "connect-bitbucket"
-  provider_type           = "Bitbucket"
+resource "aws_codestarconnections_connection" "gitlab" {
+  name          = "connect-gitlab-${var.environment}"
+  provider_type = "GitLab"
 }
 
 ################################################################################
@@ -96,15 +102,18 @@ resource "aws_codebuild_project" "main" {
   source {
     type      = "CODEPIPELINE"
     buildspec = templatefile("${path.module}/buildspec/${var.environment}.yaml", {
-      account_id      = data.aws_caller_identity.current.id
-      bucket_name     = data.aws_s3_bucket.documents.bucket
-      cluster_name    = aws_ecs_cluster.main.name
-      docker_username = data.aws_ssm_parameter.docker_username.value
-      docker_password = data.aws_ssm_parameter.docker_password.value
-      ecs_service     = aws_ecs_service.main.name
-      image_tag       = var.environment == "pro" ? var.app_version : var.build_branch
-      region          = var.region
-      repository_url  = aws_ecr_repository.main.repository_url
+      account_id       = data.aws_caller_identity.current.id
+      bucket_name      = data.aws_s3_bucket.documents.bucket
+      cluster_name     = aws_ecs_cluster.main.name
+      container_name   = aws_ecr_repository.main.name
+      container_port   = var.container_port
+      docker_username  = data.aws_ssm_parameter.docker_username.value
+      docker_password  = data.aws_ssm_parameter.docker_password.value
+      ecs_service      = aws_ecs_service.main.name
+      image_tag        = var.environment == "pro" ? var.app_version : var.build_branch
+      region           = var.region
+      repository_url   = aws_ecr_repository.main.repository_url
+      task_family_name = aws_ecs_task_definition.main.family
     })
   }
 
@@ -130,7 +139,12 @@ resource "aws_codedeploy_deployment_group" "main" {
   app_name               = aws_codedeploy_app.main.name
   deployment_group_name  = aws_codedeploy_app.main.name
   service_role_arn       = aws_iam_role.codedeploy.arn
-  deployment_config_name = "CodeDeployDefault.ECSLinear"  # または CodeDeployDefault.ECSLinear
+  deployment_config_name = "CodeDeployDefault.ECSAllAtOnce"
+
+  ecs_service {
+    cluster_name = aws_ecs_cluster.main.name
+    service_name = aws_ecs_service.main.name
+  }
 
   deployment_style {
     deployment_type   = "BLUE_GREEN"
@@ -143,13 +157,22 @@ resource "aws_codedeploy_deployment_group" "main" {
     }
     terminate_blue_instances_on_deployment_success {
       action                           = "TERMINATE"
-      termination_wait_time_in_minutes = 1
+      termination_wait_time_in_minutes = 1440 # 1day
     }
   }
 
-  ecs_service {
-    cluster_name = aws_ecs_cluster.main.name
-    service_name = aws_ecs_service.main.name
+  load_balancer_info {
+    target_group_pair_info {
+      target_group {
+        name = aws_lb_target_group.main[0].name
+      }
+      target_group {
+        name = aws_lb_target_group.main[1].name
+      }
+      prod_traffic_route {
+        listener_arns = [aws_lb_listener.main.arn]
+      }
+    }
   }
 
   auto_rollback_configuration {

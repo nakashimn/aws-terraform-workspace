@@ -12,7 +12,9 @@ resource "aws_lb" "main" {
 
 # NLBターゲットグループ定義
 resource "aws_lb_target_group" "main" {
-  name        = aws_lb.main.name
+  count = 2
+
+  name        = "${aws_lb.main.name}-${count.index}"
   target_type = "ip"
   vpc_id      = data.aws_vpc.root.id
   port        = var.container_port
@@ -35,13 +37,19 @@ resource "aws_lb_listener" "main" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.main.arn
+    target_group_arn = aws_lb_target_group.main[0].arn
+  }
+
+  lifecycle {
+    ignore_changes = [
+      default_action
+    ]
   }
 }
 
 # NLB(debug用)定義
 resource "aws_lb" "debug" {
-  count = var.environment == "dev" ? 1 : 0
+  count = ((var.environment == "dev") && (var.resource_toggles.enable_debug_nlb)) ? 1 : 0
 
   name                             = "${substr(local.name, 0, 22)}-debug-${var.environment}"
   load_balancer_type               = "network"
@@ -52,7 +60,7 @@ resource "aws_lb" "debug" {
 
 # NLB(debug用)ターゲットグループ定義
 resource "aws_lb_target_group" "debug" {
-  count = var.environment == "dev" ? 1 : 0
+  count = ((var.environment == "dev") && (var.resource_toggles.enable_debug_nlb)) ? 1 : 0
 
   name        = aws_lb.debug[0].name
   target_type = "ip"
@@ -71,7 +79,7 @@ resource "aws_lb_target_group" "debug" {
 
 # NLB(debug用)リスナー定義
 resource "aws_lb_listener" "debug" {
-  count = var.environment == "dev" ? 1 : 0
+  count = ((var.environment == "dev") && (var.resource_toggles.enable_debug_nlb)) ? 1 : 0
 
   load_balancer_arn = aws_lb.debug[0].arn
   port              = var.open_port

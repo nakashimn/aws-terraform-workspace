@@ -25,18 +25,22 @@ resource "aws_ecs_service" "main" {
     type = "CODE_DEPLOY"
   }
   load_balancer {
-    target_group_arn = aws_lb_target_group.main.arn
+    target_group_arn = aws_lb_target_group.main[0].arn
     container_name   = aws_ecr_repository.main.name
     container_port   = var.container_port
   }
 
   dynamic "load_balancer" {
-    for_each = var.environment == "dev" ? [true] : []
+    for_each = ((var.environment == "dev") && (var.resource_toggles.enable_debug_nlb)) ? [true] : []
     content {
       target_group_arn = aws_lb_target_group.debug[0].arn
       container_name   = aws_ecr_repository.main.name
       container_port   = var.container_port
     }
+  }
+
+  lifecycle {
+    ignore_changes = [ task_definition, load_balancer ]
   }
 }
 
@@ -58,7 +62,7 @@ resource "aws_ecs_task_definition" "main" {
         memory    = 1024
         essential = true
         environment = [
-          { name = "PORT", value = tostring(var.container_port) }
+          { name = "PORT", value = tostring(var.container_port) },
         ]
         portMappings = [
           {

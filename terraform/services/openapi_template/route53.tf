@@ -3,7 +3,7 @@
 ################################################################################
 # debug用NLBのalias登録(publicアクセス可)
 resource "aws_route53_record" "nlb_alias" {
-  count = var.environment == "dev" ? 1 : 0
+  count = ((var.environment == "dev") && (var.resource_toggles.enable_debug_nlb)) ? 1 : 0
 
   name    = "debug.${var.endpoint_domain}"
   type    = "A"

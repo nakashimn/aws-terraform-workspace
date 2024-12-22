@@ -22,4 +22,8 @@ allowed_ip_addresses = [
   "59.132.67.108/32"
 ]
 
+resource_toggles = {
+  enable_debug_nlb  = false
+}
+
 endpoint_domain = "nakashimn.click"

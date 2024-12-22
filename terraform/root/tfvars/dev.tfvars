@@ -5,8 +5,9 @@ service   = "templates"
 
 # 環境設定
 environment = "dev"
-region = "ap-northeast-1"
-vpc_cidr  = "172.16.0.0/16"
+profile     = "terraform"
+region      = "ap-northeast-1"
+vpc_cidr    = "172.16.0.0/16"
 
 allowed_ip_addresses = [
   "59.132.67.108/32"

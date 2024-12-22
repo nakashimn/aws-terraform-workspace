@@ -1,7 +1,7 @@
 {
-	"name": "terraform_workspace",
+	"name": "terraform-workspace",
 	"dockerComposeFile": "../compose.yaml",
-	"service": "terraform_workspace",
+	"service": "terraform-workspace",
 	"workspaceFolder": "/workspace",
 	"customizations": {
 		"vscode": {

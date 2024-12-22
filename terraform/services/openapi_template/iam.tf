@@ -34,10 +34,11 @@ resource "aws_iam_role" "codepipeline_role" {
     { principal = "codepipeline.amazonaws.com" }
   )
   managed_policy_arns = [
+    "arn:aws:iam::aws:policy/AmazonS3FullAccess",
     "arn:aws:iam::aws:policy/AWSCodePipeline_FullAccess",
     "arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess",
-    "arn:aws:iam::aws:policy/AWSCodeDeployRoleForECS",
-    aws_iam_policy.codepipeline_role.arn
+    "arn:aws:iam::aws:policy/AWSCodeDeployDeployerAccess",
+    "arn:aws:iam::aws:policy/service-role/AWSCodeStarServiceRole"
   ]
 }
 
@@ -49,18 +50,23 @@ resource "aws_iam_role" "codebuild" {
     { principal = "codebuild.amazonaws.com" }
   )
   managed_policy_arns = [
-    aws_iam_policy.codebuild_role.arn
+    "arn:aws:iam::aws:policy/AmazonS3FullAccess",
+    "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess",
+    "arn:aws:iam::aws:policy/AmazonECS_FullAccess",
+    "arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess",
+    "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
   ]
 }
 
 # CodeDeploy用ロール
 resource "aws_iam_role" "codedeploy" {
-  name = "${local.service_group}-${local.name}-CodeBuild-${var.environment}"
+  name = "${local.service_group}-${local.name}-CodeDeploy-${var.environment}"
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
     { principal = "codedeploy.amazonaws.com" }
   )
   managed_policy_arns = [
+    "arn:aws:iam::aws:policy/AmazonS3FullAccess",
     "arn:aws:iam::aws:policy/AWSCodeDeployRoleForECS",
     "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
   ]
@@ -290,32 +296,7 @@ resource "aws_iam_policy" "codepipeline_role" {
         {
           "Effect" = "Allow",
           "Action" = [
-            "s3:*",
             "codestar-connections:*"
-          ],
-          "Resource" : "*"
-        },
-      ]
-    }
-  )
-}
-
-# Codebuild用ビルド実行ポリシー
-resource "aws_iam_policy" "codebuild_role" {
-  name = "${local.service_group}-${local.name}-Codebuild-${local.name}"
-  policy = jsonencode(
-    {
-      "Version" = "2012-10-17",
-      "Statement" = [
-        {
-          "Effect" = "Allow",
-          "Action" = [
-            "ecr:*",
-            "ecs:*",
-            "logs:*",
-            "codebuild:*",
-            "s3:PutObject",
-            "s3:Get*"
           ],
           "Resource" : "*"
         },

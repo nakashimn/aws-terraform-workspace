@@ -32,6 +32,7 @@ module "codebuild_notification" {
   source = "../modules/codebuild-notification-webhook-repo"
 
   image_tag       = "latest"
+  profile         = var.profile
   region          = var.region
   repository_name = "codebuild-notification-webhook"
 }

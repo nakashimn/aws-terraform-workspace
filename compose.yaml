@@ -1,13 +1,13 @@
 services:
-  terraform_workspace:
+  terraform-workspace:
     build:
       context: .
       dockerfile: ./Dockerfile
       args:
         PLURALITH_API_KEY: ${PLURALITH_API_KEY}
         PLURALITH_VERSION: ${PLURALITH_VERSION}
-    container_name: terraform_workspace
-    hostname: terraform_workspace
+    container_name: terraform-workspace
+    hostname: terraform-workspace
     shm_size: '1gb'
     volumes:
       - ./:/workspace:cached
