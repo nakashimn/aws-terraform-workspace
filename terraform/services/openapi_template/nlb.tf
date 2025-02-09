@@ -14,7 +14,7 @@ resource "aws_lb" "main" {
 resource "aws_lb_target_group" "main" {
   count = 2
 
-  name        = "${aws_lb.main.name}-${count.index}"
+  name        = "${substr(local.name, 0, 26)}-${count.index}-${var.environment}"
   target_type = "ip"
   vpc_id      = data.aws_vpc.root.id
   port        = var.container_port
