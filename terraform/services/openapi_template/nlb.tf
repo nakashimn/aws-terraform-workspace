@@ -12,7 +12,8 @@ resource "aws_lb" "main" {
 
 # NLBターゲットグループ定義
 resource "aws_lb_target_group" "main" {
-  count = 2
+  # stg/pro環境のみBlue/Greenデプロイ用に2つ確保
+  count = var.environment == "dev" ? 1 : 2
 
   name        = "${substr(local.name, 0, 26)}-${count.index}-${var.environment}"
   target_type = "ip"
@@ -55,6 +56,7 @@ resource "aws_lb" "debug" {
   load_balancer_type               = "network"
   internal                         = false
   subnets                          = data.aws_subnets.public.ids
+  security_groups                  = [ aws_security_group.nlb_debug[0].id ]
   enable_cross_zone_load_balancing = true
 }
 

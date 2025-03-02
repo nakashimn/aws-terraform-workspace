@@ -3,7 +3,8 @@
 ################################################################################
 # APIGatewayとNLBのDNSの紐づけ
 resource "aws_api_gateway_integration" "main" {
-  count                   = length(aws_api_gateway_method.main)
+  count = length(aws_api_gateway_method.main)
+
   rest_api_id             = data.aws_api_gateway_rest_api.main.id
   resource_id             = aws_api_gateway_resource.main.id
   http_method             = aws_api_gateway_method.main[count.index].http_method
@@ -63,17 +64,12 @@ resource "aws_api_gateway_deployment" "main" {
 resource "aws_api_gateway_stage" "main" {
   rest_api_id   = data.aws_api_gateway_rest_api.main.id
   deployment_id = aws_api_gateway_deployment.main.id
-  stage_name    = "api"
+  stage_name    = var.environment == "pro" ? local.name : "${local.name}-${var.environment}"
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway.arn
     format          = replace(file("${path.module}/assets/logformat/api_gateway.json"), "\n", "")
   }
-}
-
-# APIGateway用Logger定義
-resource "aws_cloudwatch_log_group" "api_gateway" {
-  name = "/${local.service_group}-api-gateway-${var.environment}/"
 }
 
 # APIGatewayとカスタムドメインの紐づけ

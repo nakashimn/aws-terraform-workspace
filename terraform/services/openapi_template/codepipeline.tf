@@ -3,7 +3,7 @@
 ################################################################################
 # CodePipelineの設定
 resource "aws_codepipeline" "main" {
-  name     = "${local.service_group}-${local.name}-codepipeline-${var.environment}"
+  name     = "${local.service_group}-${local.name}-${var.environment}"
   role_arn = aws_iam_role.codepipeline_role.arn
 
   artifact_store {
@@ -46,19 +46,22 @@ resource "aws_codepipeline" "main" {
     }
   }
 
-  stage {
-    name = "Deploy"
-    action {
-      name             = "Deploy"
-      category         = "Deploy"
-      owner            = "AWS"
-      provider         = "CodeDeploy"
-      input_artifacts  = ["build_output"]
-      version          = "1"
+  dynamic "stage" {
+    for_each = var.environment == "dev" ? [] : [true]
+    content {
+      name = "Deploy"
+      action {
+        name             = "Deploy"
+        category         = "Deploy"
+        owner            = "AWS"
+        provider         = "CodeDeploy"
+        input_artifacts  = ["build_output"]
+        version          = "1"
 
-      configuration = {
-        ApplicationName     = aws_codedeploy_app.main.name
-        DeploymentGroupName = aws_codedeploy_deployment_group.main.deployment_group_name
+        configuration = {
+          ApplicationName     = aws_codedeploy_app.main.name
+          DeploymentGroupName = aws_codedeploy_deployment_group.main.deployment_group_name
+        }
       }
     }
   }
@@ -69,13 +72,13 @@ resource "aws_codepipeline" "main" {
 ################################################################################
 # CodeConnection定義(bitbucket)
 resource "aws_codestarconnections_connection" "bitbucket" {
-  name          = "connect-bitbucket-${var.environment}"
+  name          = "${substr("bb-${local.service_group}-${local.name}", 0, 28)}-${var.environment}"
   provider_type = "Bitbucket"
 }
 
-# CodeConnection定義
+# CodeConnection定義(GitLab)
 resource "aws_codestarconnections_connection" "gitlab" {
-  name          = "connect-gitlab-${var.environment}"
+  name          = "${substr("gl-${local.service_group}-${local.name}", 0, 28)}-${var.environment}"
   provider_type = "GitLab"
 }
 
@@ -84,7 +87,7 @@ resource "aws_codestarconnections_connection" "gitlab" {
 ################################################################################
 # Codebuildプロジェクト定義
 resource "aws_codebuild_project" "main" {
-  name           = "${local.service_group}-${local.name}-codebuild-${var.environment}"
+  name           = "${local.service_group}-${local.name}-${var.environment}"
   service_role   = aws_iam_role.codebuild.arn
   build_timeout  = 30
 
@@ -131,13 +134,17 @@ resource "aws_codebuild_project" "main" {
 ################################################################################
 # CodeDeploy定義
 resource "aws_codedeploy_app" "main" {
+  count = var.environment == "dev" ? 0 : 1
+
   name             = "${local.service_group}-${local.name}-codedeploy-${var.environment}"
   compute_platform = "ECS"
 }
 
 resource "aws_codedeploy_deployment_group" "main" {
-  app_name               = aws_codedeploy_app.main.name
-  deployment_group_name  = aws_codedeploy_app.main.name
+  count = var.environment == "dev" ? 0 : 1
+
+  app_name               = aws_codedeploy_app.main[0].name
+  deployment_group_name  = aws_codedeploy_app.main[0].name
   service_role_arn       = aws_iam_role.codedeploy.arn
   deployment_config_name = "CodeDeployDefault.ECSAllAtOnce"
 
@@ -157,7 +164,7 @@ resource "aws_codedeploy_deployment_group" "main" {
     }
     terminate_blue_instances_on_deployment_success {
       action                           = "TERMINATE"
-      termination_wait_time_in_minutes = 1440 # 1day
+      termination_wait_time_in_minutes = var.rollback_grace_minutes # 1day
     }
   }
 

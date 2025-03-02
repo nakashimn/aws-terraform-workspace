@@ -9,8 +9,10 @@ region         = "ap-northeast-1"
 vpc_cidr       = "172.16.0.0/16"
 
 # アプリケーション設定
-app_version       = "develop"
-build_branch      = "develop"
+app_version            = "develop"
+build_branch           = "develop"
+rollback_grace_minutes = 0
+
 acceptable_method = [
   "GET",
   "POST"

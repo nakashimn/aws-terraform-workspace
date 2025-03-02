@@ -22,7 +22,7 @@ resource "aws_ecs_service" "main" {
     assign_public_ip = false
   }
   deployment_controller {
-    type = "CODE_DEPLOY"
+    type = var.environment == "dev" ? "ECS" : "CODE_DEPLOY"
   }
   load_balancer {
     target_group_arn = aws_lb_target_group.main[0].arn
@@ -39,12 +39,13 @@ resource "aws_ecs_service" "main" {
     }
   }
 
+  # TaskDefinition変更時もCodePipelineからのサービス更新を正とする
   lifecycle {
     ignore_changes = [ task_definition, load_balancer ]
   }
 }
 
-# タスク定義
+# ECSタスク定義
 resource "aws_ecs_task_definition" "main" {
   family                   = "${local.service_group}-${local.name}-${var.environment}"
   requires_compatibilities = ["FARGATE"]
@@ -58,8 +59,8 @@ resource "aws_ecs_task_definition" "main" {
       {
         name      = aws_ecr_repository.main.name
         image     = "${aws_ecr_repository.main.repository_url}:${local.version}"
-        cpu       = 512
-        memory    = 1024
+        cpu       = 256
+        memory    = 512
         essential = true
         environment = [
           { name = "PORT", value = tostring(var.container_port) },
