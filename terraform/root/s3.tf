@@ -19,15 +19,6 @@ resource "aws_s3_bucket_website_configuration" "documents" {
   }
 }
 
-# S3バケットのパブリックアクセスブロック設定
-resource "aws_s3_bucket_public_access_block" "documents" {
-  bucket                  = aws_s3_bucket.documents.id
-  block_public_acls       = false
-  block_public_policy     = false
-  ignore_public_acls      = false
-  restrict_public_buckets = false
-}
-
 # S3バケットのポリシー紐づけ
 resource "aws_s3_bucket_policy" "documents" {
   bucket = aws_s3_bucket.documents.id
@@ -44,24 +35,10 @@ data "aws_iam_policy_document" "documents" {
     resources = [
         "${aws_s3_bucket.documents.arn}/*"
     ]
-    # principals {
-    #   type        = "Service"
-    #   identifiers = ["cloudfront.amazonaws.com"]
-    # }
-    # condition {
-    #   test     = "StringEquals"
-    #   variable = "aws:SourceArn"
-    #   values   = [aws_cloudfront_distribution.documents.arn]
-    # }
-
-    principals {
-      type        = "AWS"
-      identifiers = ["*"]
-    }
     condition {
       test     = "IpAddress"
       variable = "aws:SourceIp"
-      values   = var.allowed_ip_addresses
+      values   = var.allowed_ips_for_docs
     }
   }
 }

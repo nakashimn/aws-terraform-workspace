@@ -2,5 +2,6 @@
 .env
 .terraform*
 *.tfstate*
+!.terraform.lock.hcl
 config.secret.tf
 *.secret.tf

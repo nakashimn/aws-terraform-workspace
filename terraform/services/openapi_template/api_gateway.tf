@@ -35,7 +35,7 @@ resource "aws_api_gateway_method" "main" {
   http_method   = var.acceptable_method[count.index]
   authorization = "NONE"
   request_parameters = {
-    "method.request.path.proxy" = true
+    "method.request.path.proxy" = true # proxy統合有効化
   }
 }
 

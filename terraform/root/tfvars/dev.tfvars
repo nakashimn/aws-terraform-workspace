@@ -1,25 +1,23 @@
 # サービスグループ定義
-vendor    = "nakashimn"
-countory  = "jp"
-service   = "templates"
+vendor  = "nakashimn"
+region  = "ap-northeast-1"
+service = "templates"
 
 # 環境設定
-environment = "dev"
+country     = "jp"
+vpc_cidr    = "172.16.0.0/20"
 profile     = "terraform"
-region      = "ap-northeast-1"
-vpc_cidr    = "172.16.0.0/16"
+environment = "dev"
 
-allowed_ip_addresses = [
-  "59.132.67.108/32"
-]
+n_availability_zone = 1
 
-open_ports  = [
-  80, 443, 3000, 8000
-]
+allowed_ips_for_web = []
+allowed_ips_for_docs = []
 
 resource_toggles = {
   enable_nat_gateway  = false
   enable_vpc_endpoint = false
 }
 
+open_port       = 443
 endpoint_domain = "nakashimn.click"

@@ -16,10 +16,11 @@ resource "aws_vpc" "main" {
 ################################################################################
 # PublicSubnet定義
 resource "aws_subnet" "public" {
-  count  = var.environment == "dev" ? 1 : length(local.availability_zones) # AvailabilityZoneの数だけ生成
+  count  = var.n_availability_zone
 
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = cidrsubnet(aws_vpc.main.cidr_block, 3, count.index) # 2^3分割を想定
+  vpc_id     = aws_vpc.main.id
+  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 3, count.index) # 2^3分割を想定
+
   availability_zone       = local.availability_zones[count.index].name
   map_public_ip_on_launch = true
 
@@ -59,10 +60,11 @@ resource "aws_route_table_association" "public" {
 ################################################################################
 # PrivateSubnet定義
 resource "aws_subnet" "private" {
-  count = var.environment == "dev" ? 1 : length(local.availability_zones) # AvailabilityZoneの数だけ生成
+  count = var.n_availability_zone
 
   vpc_id     = aws_vpc.main.id
-  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 3,count.index + length(local.availability_zones)) # 2^3分割を想定
+  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 3, count.index + var.n_availability_zone) # 2^3分割を想定
+
   availability_zone       = local.availability_zones[count.index].name
   map_public_ip_on_launch = false
 
@@ -135,6 +137,7 @@ resource "aws_eip" "nat_gateway" {
 ################################################################################
 # PrivateLink
 ################################################################################
+# VPCEndpointの定義(ECR)
 resource "aws_vpc_endpoint" "ecr_dkr" {
   count = var.resource_toggles.enable_vpc_endpoint ? 1 : 0
 
@@ -144,8 +147,13 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
   subnet_ids          = aws_subnet.private[*].id
   security_group_ids  = [aws_security_group.private_link.id]
   private_dns_enabled = true
+
+  tags = {
+    Name = "${local.service_group}-vpce-ecr-dkr-${var.environment}"
+  }
 }
 
+# VPCEndpointの定義(ECRAPI)
 resource "aws_vpc_endpoint" "ecr_api" {
   count = var.resource_toggles.enable_vpc_endpoint ? 1 : 0
 
@@ -155,8 +163,13 @@ resource "aws_vpc_endpoint" "ecr_api" {
   subnet_ids          = aws_subnet.private[*].id
   security_group_ids  = [aws_security_group.private_link.id]
   private_dns_enabled = true
+
+  tags = {
+    Name = "${local.service_group}-vpce-ecr-api-${var.environment}"
+  }
 }
 
+# VPCEndpointの定義(Logs)
 resource "aws_vpc_endpoint" "logs" {
   count = var.resource_toggles.enable_vpc_endpoint ? 1 : 0
 
@@ -166,13 +179,38 @@ resource "aws_vpc_endpoint" "logs" {
   subnet_ids          = aws_subnet.private[*].id
   security_group_ids  = [aws_security_group.private_link.id]
   private_dns_enabled = true
+
+  tags = {
+    Name = "${local.service_group}-vpce-logs-${var.environment}"
+  }
 }
 
+# VPCEndpointの定義(S3)
 resource "aws_vpc_endpoint" "s3" {
   count = var.resource_toggles.enable_vpc_endpoint ? 1 : 0
 
+  vpc_id            = aws_vpc.main.id
   service_name      = "com.amazonaws.${var.region}.s3"
   vpc_endpoint_type = "Gateway"
-  vpc_id            = aws_vpc.main.id
-  route_table_ids = aws_route_table.private[*].id
+  route_table_ids   = aws_route_table.private[*].id
+
+  tags = {
+    Name = "${local.service_group}-vpce-s3-${var.environment}"
+  }
+}
+
+# VPCEndpointの定義(PrivateAPIGateway)
+resource "aws_vpc_endpoint" "apigateway" {
+  count = var.resource_toggles.enable_vpc_endpoint ? 1 : 0
+
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${var.region}.execute-api"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.private[*].id
+  security_group_ids  = [ aws_security_group.api_gateway.id ]
+  private_dns_enabled = true
+
+  tags = {
+    Name = "${local.service_group}-vpce-apigw-${var.environment}"
+  }
 }

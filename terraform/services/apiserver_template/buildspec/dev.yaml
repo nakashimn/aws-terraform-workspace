@@ -1,0 +1,40 @@
+version: 0.2
+
+phases:
+  pre_build:
+    on-failure: ABORT
+    commands:
+      - docker login --username "${docker_username}" --password "${docker_password}"
+      - export BUILD_TIMESTAMP=$(date '+%Y%m%d_%H%M')
+
+  build:
+    on-failure: ABORT
+    commands:
+      - docker build --target prod -t ${repository_url}:${image_tag} .
+      # - docker-compose run doc
+      # - docker-compose run test
+
+  post_build:
+    on-failure: ABORT
+    commands:
+      - aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${account_id}.dkr.ecr.${region}.amazonaws.com
+      # - aws s3 cp ./docs s3://${bucket_name}/${ecs_service} --recursive
+      # - aws s3 cp ./docs/jest-report/ s3://${bucket_name}/${ecs_service}/jest-report-history/jest-report-$BUILD_TIMESTAMPZ/ --recursive
+      - docker push ${repository_url}:${image_tag}
+      - TASK_DEFINITION_ARN=$(aws ecs describe-task-definition --task-definition ${task_family_name} --region ${region} --query "taskDefinition.taskDefinitionArn" --output text)
+      - |
+        cat <<EOF > appspec.yaml
+        version: 0.0
+        Resources:
+          - TargetService:
+              Type: AWS::ECS::Service
+              Properties:
+                TaskDefinition: $TASK_DEFINITION_ARN
+                LoadBalancerInfo:
+                  ContainerName: ${container_name}
+                  ContainerPort: ${container_port}
+        EOF
+
+artifacts:
+  files:
+    - appspec.yaml

@@ -8,6 +8,19 @@ resource "aws_route53_zone" "main" {
 
 # Route53レコード登録
 resource "aws_route53_record" "main" {
+  zone_id = aws_route53_zone.main.id
+  name    = aws_route53_zone.main.name
+  type    = "A"
+
+  alias {
+    evaluate_target_health = true
+    name                   = aws_lb.main.dns_name
+    zone_id                = aws_lb.main.zone_id
+  }
+}
+
+# Route53レコード登録(certification用)
+resource "aws_route53_record" "cert" {
   for_each = {
     for dvo in aws_acm_certificate.main.domain_validation_options : dvo.domain_name => {
       name   = dvo.resource_record_name
