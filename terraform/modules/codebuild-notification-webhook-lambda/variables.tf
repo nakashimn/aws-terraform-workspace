@@ -3,10 +3,6 @@
 ################################################################################
 variable "codebuild_notification_repo_url" { description = "CodeBuild-NotificationのECRリポジトリ名" }
 variable "codebuild_project_name" { description = "対象のCodeBuildプロジェクト名" }
-variable "random_id_length" {
-  default     = 0
-  description = "リソース名のランダムID長(default=0)"
-}
 variable "webhook_url" { description = "webhookのURL" }
 
 variable "in_progress_message" {

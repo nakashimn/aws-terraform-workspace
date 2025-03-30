@@ -1,37 +1,35 @@
 ################################################################################
 # Role
 ################################################################################
-# Codebuild用タスクロール
-resource "aws_iam_role" "codebuild" {
-  name = "CodeBuildRole-${substr(var.repository_name, 0, 50)}"
+# CodePipeline用ロール
+resource "aws_iam_role" "codepipeline" {
+  name = "${substr("${local.appname}-CodePipeline", 0, 63-local.len_suffix)}-${var.environment}"
   assume_role_policy = templatefile(
     "${path.module}/assets/templates/assume_role_policy.tpl",
     { principal = "codebuild.amazonaws.com" }
   )
   managed_policy_arns = [
-    aws_iam_policy.codebuild_role.arn
+    "arn:aws:iam::aws:policy/AmazonS3FullAccess",
+    "arn:aws:iam::aws:policy/AWSCodePipeline_FullAccess",
+    "arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess",
+    "arn:aws:iam::aws:policy/AWSCodeDeployDeployerAccess",
+    "arn:aws:iam::aws:policy/service-role/AWSCodeStarServiceRole"
   ]
 }
 
-################################################################################
-# Policy
-################################################################################
-# CodeBuild用ポリシー
-resource "aws_iam_policy" "codebuild_role" {
-  name = "CodebuildPolicy-${substr(var.repository_name, 0, 48)}"
-  policy = jsonencode(
-    {
-      "Version" = "2012-10-17",
-      "Statement" = [
-        {
-          "Effect" = "Allow",
-          "Action" = [
-            "ecr:*",
-            "logs:*"
-          ],
-          "Resource" : "*"
-        },
-      ]
-    }
+# CodeBuild用ロール
+resource "aws_iam_role" "codebuild" {
+  name = "${substr("${local.appname}-CodeBuild", 0, 63-local.len_suffix)}-${var.environment}"
+  assume_role_policy = templatefile(
+    "${path.module}/assets/templates/assume_role_policy.tpl",
+    { principal = "codebuild.amazonaws.com" }
   )
+  managed_policy_arns = [
+    "arn:aws:iam::aws:policy/AmazonS3FullAccess",
+    "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess",
+    "arn:aws:iam::aws:policy/AmazonECS_FullAccess",
+    "arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess",
+    "arn:aws:iam::aws:policy/AWSLambda_FullAccess",
+    "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+  ]
 }

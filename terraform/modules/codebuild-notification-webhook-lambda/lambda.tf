@@ -3,8 +3,8 @@
 ################################################################################
 # lambda関数定義
 resource "aws_lambda_function" "codebuild_notification" {
-  function_name = substr("notification${random_id.main.b64_url}-${var.codebuild_project_name}", 0, 64)
-  description   = "Build notification for ${var.codebuild_project_name}."
+  function_name = substr("bldnotif-${var.codebuild_project_name}", 0, 64)
+  description   = "CodeBuild Notification for ${var.codebuild_project_name}."
   package_type  = "Image"
   image_uri     = "${var.codebuild_notification_repo_url}:latest"
   role          = aws_iam_role.lambda.arn
@@ -25,7 +25,7 @@ resource "aws_lambda_function" "codebuild_notification" {
 
 # lambda実行パーミッション定義
 resource "aws_lambda_permission" "codebuild_notification" {
-  statement_id  = substr("FromEventBridge${random_id.main.b64_url}-${var.codebuild_project_name}", 0, 64)
+  statement_id  = substr("FromEventBridge-${var.codebuild_project_name}", 0, 64)
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.codebuild_notification.function_name
   principal     = "events.amazonaws.com"
